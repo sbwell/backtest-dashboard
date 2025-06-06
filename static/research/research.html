@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Research Dashboard</title>
+  <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
+  <style>
+    #chart-wrapper {
+      position: relative;
+      width: 800px;
+      margin: 0 auto;
+    }
+
+    #chart {
+      width: 800px;
+      height: 500px;
+      max-width: 1000px;
+      background-color: white;
+      overflow: visible;
+    }
+
+    #hoverBox {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: rgba(255,255,255,0.9);
+      border: 1px solid #ccc;
+      padding: 8px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      z-index: 10;
+      pointer-events: none;
+      white-space: pre-line;
+    }
+
+    #trades {
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+      font-family: sans-serif;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fafafa;
+      }
+
+    .selected-row {
+      background-color: #d2e9ff !important;
+    }
+  </style>
+</head>
+<body>
+  <h2>Research Dashboard</h2>
+  <div style="margin-bottom: 10px;">
+    <label for="symbol">Symbol:</label>
+    <select id="symbol">
+        <option value="EURUSD">EURUSD</option>
+        <option value="GBPUSD">GBPUSD</option>
+        <option value="USDJPY">USDJPY</option>
+        <option value="USDCAD">USDCAD</option>
+        <option value="USDCHF">USDCHF</option>
+        <option value="AUDUSD">AUDUSD</option>
+        <option value="NZDUSD">NZDUSD</option>
+    </select>
+
+    <label for="timeframe" style="margin-left: 20px;">Timeframe:</label>
+    <select id="timeframe">
+        <option value="M1">1 Minute</option>
+        <option value="M5" selected>5 Minute</option>
+        <option value="M15">15 Minute</option>
+        <option value="H1" >1 Hour</option>
+        <option value="H4">4 Hour</option>
+        <option value="D1">1 Day</option>
+    </select>
+
+  </div>
+
+  <div id="chart-wrapper">
+    <div id="chart"></div>
+    <div id="hoverBox"></div>
+  </div>
+
+  <div style="margin-top: 20px;">
+  <button id="showAllTradesBtn" style="margin-left: 20px;">Show All Trades</button>
+  <button id="clearTradesBtn">Clear Trades</button>
+
+  <label for="backtest-select" style="margin-right: 10px;">Backtest:</label>
+  <select id="backtest-select"></select>
+  <button id="loadBacktestBtn">Load Backtest</button>
+
+  </div>
+  
+  <table id="trade-table"></table>
+
+  <table id="trades" class="display">
+    <thead>
+      <tr>
+        <th>Entry Time</th>
+        <th>Exit Time</th>
+        <th>Type</th>
+        <th>Entry Price</th>
+        <th>Exit Price</th>
+        <th>PnL</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="/static/research/chart.js"></script>
+
+</body>
+</html>
+

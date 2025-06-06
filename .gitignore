@@ -1,0 +1,5 @@
+*.csv
+*.zip
+*.db
+!backtests.db       # <- this un-ignores backtests.db
+__pycache__/

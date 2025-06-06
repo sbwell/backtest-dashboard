@@ -1,0 +1,5 @@
+
+[
+  { "time": 1747386600, "type": "buy", "price": 1.1153, "pnl": 18, "atr_factor": 0.8 },
+  { "time": 1747372800, "type": "sell", "price": 1.1172, "pnl": -12, "atr_factor": 1.2 }
+]
