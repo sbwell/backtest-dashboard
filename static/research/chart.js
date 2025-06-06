@@ -10,6 +10,8 @@ async function fetchBacktests() {
     const res = await fetch("/backtests");
     const data = await res.json();
     const select = document.getElementById("backtest-select");
+
+    const previousValue = select.value;
     select.innerHTML = "";
 
     const filtered = data.filter(bt => bt.symbol === symbol || bt.symbol === "multi");
@@ -21,12 +23,19 @@ async function fetchBacktests() {
         select.appendChild(option);
     });
 
-    if (filtered.length > 0) {
+    if (filtered.some(bt => bt.id == previousValue)) {
+        select.value = previousValue;
+        selectedBacktestId = previousValue;
+    } else if (filtered.length > 0) {
         select.value = filtered[0].id;
         selectedBacktestId = filtered[0].id;
-        await renderChart();
+    } else {
+        selectedBacktestId = null;
     }
 
+    await renderChart();
+
+    // Handle dropdown change
     select.addEventListener("change", async () => {
         selectedBacktestId = select.value;
         await renderChart();
@@ -40,6 +49,11 @@ async function renderChart() {
     const symbol = document.getElementById("symbol").value;
     const timeframe = document.getElementById("timeframe").value;
     const isJPY = symbol.endsWith("JPY");
+
+    if (chart) {
+    chart.remove();
+    chart = null;
+    }
 
     chart = LightweightCharts.createChart(chartContainer, {
         width: chartContainer.clientWidth,
@@ -86,9 +100,18 @@ Volume: ${d.volume ?? '—'}`;
     });
 
     try {
+//        console.log("Fetching candles for", symbol, timeframe); // ✅ Log request
         const candleRes = await fetch(`/candles?symbol=${symbol}&timeframe=${timeframe}`);
         const chartData = await candleRes.json();
+//        console.log("Received candles:", chartData.length); // ✅ Log response length
+
+        if (!chartData || chartData.length === 0) {
+            console.warn("Empty chart data returned for:", symbol);
+            return;
+        }
+
         candlestickSeries.setData(chartData);
+//        console.log("Set chart data"); // ✅ Confirm rendering
     } catch (err) {
         console.error("Failed to load candles:", err);
         return;
@@ -218,7 +241,11 @@ window.onload = () => {
         document.querySelectorAll("#trades tbody tr").forEach(r => r.classList.remove("selected-row"));
     });
 
-    document.getElementById("symbol").addEventListener("change", fetchBacktests);
+    document.getElementById("symbol").addEventListener("change", () => {
+//        console.log("Symbol dropdown changed"); // ✅ debug
+        fetchBacktests();
+    });
+
     document.getElementById("timeframe").addEventListener("change", renderChart);
 
     fetchBacktests();
