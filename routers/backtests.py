@@ -38,20 +38,20 @@ def get_backtest(backtest_id: int):
     result["settings"] = json.loads(result["settings_json"]) if result["settings_json"] else None
     return result
 
-@router.get("/trades")
-def get_trades(backtest_id: int = Query(...)):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM trades WHERE backtest_id = ? ORDER BY entry_time", (backtest_id,))
-    columns = [col[0] for col in cursor.description]
-    trades = []
+#@router.get("/trades")
+#def get_trades(backtest_id: int = Query(...)):
+#    conn = get_db()
+#    cursor = conn.cursor()
+#    cursor.execute("SELECT * FROM trades WHERE backtest_id = ? ORDER BY entry_time", (backtest_id,))
+#    columns = [col[0] for col in cursor.description]
+#    trades = []
 
-    for row in cursor.fetchall():
-        trade = dict(zip(columns, row))
-        try:
-            trade["details"] = json.loads(trade.get("details_json", "{}")) if trade.get("details_json") else {}
-        except json.JSONDecodeError:
-            trade["details"] = {}
-        trades.append(trade)
-
-    return trades
+#    for row in cursor.fetchall():
+#        trade = dict(zip(columns, row))
+#        try:
+#            trade["details"] = json.loads(trade.get("details_json", "{}")) if trade.get("details_json") else {}
+#        except json.JSONDecodeError:
+#            trade["details"] = {}
+#        trades.append(trade)
+#
+#    return trades

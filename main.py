@@ -1,3 +1,5 @@
+print("🚨 main.py has been loaded")
+
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -6,6 +8,7 @@ import os
 from typing import Optional
 from routers import backtests
 from db import init_db, insert_mock_backtest
+import sqlite3
 
 app = FastAPI()
 
@@ -76,14 +79,25 @@ def research_page():
 
 # Serve mock trade data
 @app.get("/trades")
-def get_trades(symbol: str = Query(...)):
-    path = os.path.join(DATA_DIR, "data", f"{symbol.upper()}_trades.json")
-    if not os.path.isfile(path):
-        raise HTTPException(status_code=404, detail="Trade log not found.")
-    import json
-    with open(path, "r") as f:
-        trades = json.load(f)
-        return JSONResponse(content=trades)
+def get_trades(backtest_id: int, symbol: str = None):
+    print("🔥 Trades endpoint hit!")  # NEW LINE
+    print(f"📥 Params received: backtest_id={backtest_id}, symbol={symbol}")
+
+    conn = sqlite3.connect("backtests.db")
+    cursor = conn.cursor()
+
+    if symbol:
+        print(f"✅ Running SQL with symbol filter")
+        cursor.execute("SELECT * FROM trades WHERE backtest_id = ? AND symbol = ?", (backtest_id, symbol))
+    else:
+        print(f"⚠️ Running SQL without symbol filter")
+        cursor.execute("SELECT * FROM trades WHERE backtest_id = ?", (backtest_id,))
+
+    rows = cursor.fetchall()
+    print(f"📊 Retrieved {len(rows)} trades from database")
+
+    columns = [desc[0] for desc in cursor.description]
+    return [dict(zip(columns, row)) for row in rows]
 
 from fastapi.responses import FileResponse
 

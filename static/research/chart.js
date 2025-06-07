@@ -33,13 +33,8 @@ async function fetchBacktests() {
         selectedBacktestId = null;
     }
 
+    // ✅ Always redraw chart after setting backtest ID
     await renderChart();
-
-    // Handle dropdown change
-    select.addEventListener("change", async () => {
-        selectedBacktestId = select.value;
-        await renderChart();
-    });
 }
 
 async function renderChart() {
@@ -50,9 +45,13 @@ async function renderChart() {
     const timeframe = document.getElementById("timeframe").value;
     const isJPY = symbol.endsWith("JPY");
 
+    // ✅ Always clear table, even if no backtest
+    const tableBody = document.querySelector("#trades tbody");
+    tableBody.innerHTML = "";
+
     if (chart) {
-    chart.remove();
-    chart = null;
+        chart.remove();
+        chart = null;
     }
 
     chart = LightweightCharts.createChart(chartContainer, {
@@ -100,10 +99,8 @@ Volume: ${d.volume ?? '—'}`;
     });
 
     try {
-//        console.log("Fetching candles for", symbol, timeframe); // ✅ Log request
         const candleRes = await fetch(`/candles?symbol=${symbol}&timeframe=${timeframe}`);
         const chartData = await candleRes.json();
-//        console.log("Received candles:", chartData.length); // ✅ Log response length
 
         if (!chartData || chartData.length === 0) {
             console.warn("Empty chart data returned for:", symbol);
@@ -111,7 +108,6 @@ Volume: ${d.volume ?? '—'}`;
         }
 
         candlestickSeries.setData(chartData);
-//        console.log("Set chart data"); // ✅ Confirm rendering
     } catch (err) {
         console.error("Failed to load candles:", err);
         return;
@@ -120,11 +116,11 @@ Volume: ${d.volume ?? '—'}`;
     if (!selectedBacktestId) return;
 
     try {
-        const tradeRes = await fetch(`/trades?backtest_id=${selectedBacktestId}`);
-        trades = await tradeRes.json();
+        const symbol = document.getElementById("symbol").value;
+        const tradeRes = await fetch(`/trades?backtest_id=${selectedBacktestId}&symbol=${symbol}`);
 
-        const tableBody = document.querySelector("#trades tbody");
-        tableBody.innerHTML = "";
+        trades = await tradeRes.json();
+        console.log("Loaded trades:", trades.length, "symbol:", symbol, "backtest:", selectedBacktestId);
 
         markers = [];
         tradeLines = [];
@@ -134,9 +130,9 @@ Volume: ${d.volume ?? '—'}`;
             const exitTime = Math.floor(new Date(trade.exit_time).getTime() / 1000);
             const isBuy = trade.side === "buy";
 
-            // Table row
             const row = document.createElement("tr");
             row.innerHTML = `
+                <td>${trade.symbol}</td>
                 <td>${new Date(trade.entry_time).toLocaleString()}</td>
                 <td>${new Date(trade.exit_time).toLocaleString()}</td>
                 <td>${isBuy ? "Buy" : "Sell"}</td>
@@ -212,7 +208,9 @@ Volume: ${d.volume ?? '—'}`;
 }
 
 window.onload = () => {
-    document.getElementById("loadBacktestBtn").addEventListener("click", fetchBacktests);
+    document.getElementById("loadBacktestBtn").addEventListener("click", async () => {
+        await fetchBacktests();
+    });
 
     document.getElementById("clearTradesBtn").addEventListener("click", () => {
         candlestickSeries.setMarkers([]);
@@ -241,11 +239,7 @@ window.onload = () => {
         document.querySelectorAll("#trades tbody tr").forEach(r => r.classList.remove("selected-row"));
     });
 
-    document.getElementById("symbol").addEventListener("change", () => {
-//        console.log("Symbol dropdown changed"); // ✅ debug
-        fetchBacktests();
-    });
-
+    document.getElementById("symbol").addEventListener("change", fetchBacktests);
     document.getElementById("timeframe").addEventListener("change", renderChart);
 
     fetchBacktests();
