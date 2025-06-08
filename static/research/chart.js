@@ -343,6 +343,92 @@ window.onload = () => {
         await fetchBacktests();
     });
 
+    document.addEventListener("keydown", (e) => {
+        const range = chart.timeScale().getVisibleRange();
+        if (!range) return;
+
+        const timePerBar = (chartData.at(-1)?.time - chartData[0]?.time) / chartData.length;
+        const step = timePerBar * 5; // scroll 5 bars worth of time
+
+        if (e.key === "ArrowLeft") {
+            const firstTime = chartData[0]?.time;
+            if (range.from - step >= firstTime) {
+                chart.timeScale().setVisibleRange({
+                    from: range.from - step,
+                    to: range.to - step
+                });
+            } else {
+                const visibleLength = range.to - range.from;
+                chart.timeScale().setVisibleRange({
+                    from: firstTime,
+                    to: firstTime + visibleLength
+                });
+            }
+        }
+
+
+        if (e.key === "ArrowRight") {
+            const lastTime = chartData.at(-1)?.time;
+            if (range.to + step <= lastTime) {
+                chart.timeScale().setVisibleRange({
+                    from: range.from + step,
+                    to: range.to + step
+                });
+            } else {
+                // Snap to final range without overshooting
+                const visibleLength = range.to - range.from;
+                chart.timeScale().setVisibleRange({
+                    from: lastTime - visibleLength,
+                    to: lastTime
+                });
+            }
+        }
+
+        if (e.key === "Home") {
+            const firstTime = chartData[0]?.time;
+            if (firstTime) {
+                const rangeSize = range.to - range.from;
+                const maxRange = 100 * 60 * 15; // max 100 bars at 15 min each (adjustable)
+                const visibleLength = Math.min(rangeSize, maxRange);
+
+                chart.timeScale().setVisibleRange({
+                    from: firstTime,
+                    to: firstTime + visibleLength
+                });
+            }
+        }
+
+        if (e.key === "End") {
+            const lastTime = chartData[chartData.length - 1]?.time;
+            if (lastTime) {
+                const rangeSize = range.to - range.from;
+                const maxRange = 100 * 60 * 15; // max 100 bars at 15 min each (adjustable)
+                const visibleLength = Math.min(rangeSize, maxRange);
+
+                chart.timeScale().setVisibleRange({
+                    from: lastTime - visibleLength,
+                    to: lastTime
+                });
+            }
+        }
+
+        if (e.key === "r" || e.key === "R") {
+            const barCount = 100; // ⏳ number of candles to display on reset
+
+            const lastTime = chartData.at(-1)?.time;
+            const timePerBar = (chartData.at(-1).time - chartData[0].time) / chartData.length;
+            const visibleLength = timePerBar * barCount;
+
+            chart.timeScale().setVisibleRange({
+                from: lastTime - visibleLength,
+                to: lastTime
+            });
+
+            candlestickSeries.priceScale().applyOptions({ autoScale: true });
+        }
+
+    });
+
     fetchBacktests();
 };
 
