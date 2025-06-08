@@ -17,7 +17,7 @@ app = FastAPI()
 
 # Initialize DB & insert mock if needed
 init_db()
-insert_mock_backtest()
+# insert_mock_backtest()
 
 # Mount backtest routes
 app.include_router(backtests.router)
