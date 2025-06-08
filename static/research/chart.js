@@ -4,6 +4,7 @@ let chart;
 let markers = [];
 let tradeLines = [];
 let selectedBacktestId = null;
+let chartData = [];
 
 async function fetchBacktests() {
     const symbol = document.getElementById("symbol").value;
@@ -33,7 +34,6 @@ async function fetchBacktests() {
         selectedBacktestId = null;
     }
 
-    // ✅ Always redraw chart after setting backtest ID
     await renderChart();
 }
 
@@ -45,7 +45,6 @@ async function renderChart() {
     const timeframe = document.getElementById("timeframe").value;
     const isJPY = symbol.endsWith("JPY");
 
-    // ✅ Always clear table, even if no backtest
     const tableBody = document.querySelector("#trades tbody");
     tableBody.innerHTML = "";
 
@@ -100,7 +99,7 @@ Volume: ${d.volume ?? '—'}`;
 
     try {
         const candleRes = await fetch(`/candles?symbol=${symbol}&timeframe=${timeframe}`);
-        const chartData = await candleRes.json();
+        chartData = await candleRes.json();
 
         if (!chartData || chartData.length === 0) {
             console.warn("Empty chart data returned for:", symbol);
@@ -116,9 +115,7 @@ Volume: ${d.volume ?? '—'}`;
     if (!selectedBacktestId) return;
 
     try {
-        const symbol = document.getElementById("symbol").value;
         const tradeRes = await fetch(`/trades?backtest_id=${selectedBacktestId}&symbol=${symbol}`);
-
         trades = await tradeRes.json();
         console.log("Loaded trades:", trades.length, "symbol:", symbol, "backtest:", selectedBacktestId);
 
@@ -170,6 +167,14 @@ Volume: ${d.volume ?? '—'}`;
                     { time: exitTime, value: trade.exit_price }
                 ]);
                 tradeLines.push(lineSeries);
+
+                const visibleRange = chart.timeScale().getVisibleRange();
+                if (visibleRange) {
+                    const rangeSize = visibleRange.to - visibleRange.from;
+                    const from = entryTime - rangeSize / 2;
+                    const to = entryTime + rangeSize / 2;
+                    chart.timeScale().setVisibleRange({ from, to });
+                }
 
                 document.querySelectorAll("#trades tbody tr").forEach(r => r.classList.remove("selected-row"));
                 row.classList.add("selected-row");
@@ -244,3 +249,4 @@ window.onload = () => {
 
     fetchBacktests();
 };
+
