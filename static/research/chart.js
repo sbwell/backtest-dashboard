@@ -7,6 +7,7 @@ let selectedBacktestId = null;
 let chartData = [];
 
 async function fetchBacktests() {
+    console.log("Fetching backtests...");
     const symbol = document.getElementById("symbol").value;
     const res = await fetch("/backtests");
     const data = await res.json();
@@ -38,6 +39,7 @@ async function fetchBacktests() {
 }
 
 async function renderChart() {
+    console.log("Rendering chart...");
     const chartContainer = document.getElementById("chart");
     chartContainer.innerHTML = "";
 
@@ -107,25 +109,85 @@ Volume: ${d.volume ?? '—'}`;
         }
 
         candlestickSeries.setData(chartData);
+
+        let isLoadingMore = false;
+
+        chart.timeScale().subscribeVisibleTimeRangeChange(async (range) => {
+            if (!range || isLoadingMore) return;
+
+            const earliestLoaded = chartData[0]?.time;
+            if (range.from <= earliestLoaded + 60) {
+                isLoadingMore = true;
+
+                try {
+                    const res = await fetch(`/candles?symbol=${symbol}&timeframe=${timeframe}&before=${earliestLoaded}`);
+                    const moreData = await res.json();
+
+                    if (moreData && moreData.length > 0) {
+                        chartData = [...moreData, ...chartData];
+                        candlestickSeries.setData(chartData);
+                    }
+                } catch (err) {
+                    console.error("Error loading more candles:", err);
+                }
+
+                isLoadingMore = false;
+            }
+        });
+
     } catch (err) {
         console.error("Failed to load candles:", err);
         return;
     }
 
-    if (!selectedBacktestId) return;
+    if (!selectedBacktestId) {
+        console.warn("No backtest ID selected.");
+        return;
+    }
+
+    function timestampExists(ts) {
+        return chartData.some(c => Math.abs(c.time - ts) <= 60 * 15);
+    }
+
+    function getNearestTime(ts) {
+        let closest = chartData[0]?.time ?? ts;
+        let minDiff = Math.abs(closest - ts);
+
+        for (let i = 1; i < chartData.length; i++) {
+            const t = chartData[i].time;
+            const diff = Math.abs(t - ts);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = t;
+            }
+        }
+
+        return closest;
+    }
 
     try {
         const tradeRes = await fetch(`/trades?backtest_id=${selectedBacktestId}&symbol=${symbol}`);
         trades = await tradeRes.json();
-        console.log("Loaded trades:", trades.length, "symbol:", symbol, "backtest:", selectedBacktestId);
+        console.log("Fetched trades:", trades.length);
 
         markers = [];
         tradeLines = [];
 
-        trades.forEach((trade, index) => {
+        trades.forEach((trade) => {
+            console.log("Building row for:", trade.entry_time);
             const entryTime = Math.floor(new Date(trade.entry_time).getTime() / 1000);
             const exitTime = Math.floor(new Date(trade.exit_time).getTime() / 1000);
             const isBuy = trade.side === "buy";
+
+            const entryExists = timestampExists(entryTime);
+            const exitExists = timestampExists(exitTime);
+            if (!entryExists || !exitExists) {
+                console.warn("Entry/Exit not found in chartData!", { entryTime, exitTime });
+                return;
+            }
+
+            const snappedEntryTime = getNearestTime(entryTime);
+            const snappedExitTime = getNearestTime(exitTime);
 
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -139,51 +201,57 @@ Volume: ${d.volume ?? '—'}`;
             `;
             row.style.cursor = "pointer";
 
-            row.addEventListener("click", () => {
-                const entryMarker = {
-                    time: entryTime,
-                    position: isBuy ? "belowBar" : "aboveBar",
-                    color: isBuy ? "green" : "red",
-                    shape: isBuy ? "arrowUp" : "arrowDown",
-                    text: "Entry"
-                };
+            row.addEventListener("click", (e) => {
+                console.log("Row clicked:", trade.entry_time);
+                const clickedRow = e.currentTarget;
 
-                const exitMarker = {
-                    time: exitTime,
-                    position: isBuy ? "aboveBar" : "belowBar",
-                    color: isBuy ? "red" : "green",
-                    shape: isBuy ? "arrowDown" : "arrowUp",
-                    text: "Exit"
-                };
-
-                candlestickSeries.setMarkers([entryMarker, exitMarker]);
+                candlestickSeries.setMarkers([]);
+                candlestickSeries.setMarkers([
+                    {
+                        time: snappedEntryTime,
+                        position: isBuy ? "belowBar" : "aboveBar",
+                        color: isBuy ? "green" : "red",
+                        shape: isBuy ? "arrowUp" : "arrowDown",
+                        text: "Entry"
+                    },
+                    {
+                        time: snappedExitTime,
+                        position: isBuy ? "aboveBar" : "belowBar",
+                        color: isBuy ? "red" : "green",
+                        shape: isBuy ? "arrowDown" : "arrowUp",
+                        text: "Exit"
+                    }
+                ]);
 
                 tradeLines.forEach(line => chart.removeSeries(line));
                 tradeLines = [];
 
                 const lineSeries = chart.addLineSeries({ color: "gray", lineWidth: 1 });
                 lineSeries.setData([
-                    { time: entryTime, value: trade.entry_price },
-                    { time: exitTime, value: trade.exit_price }
+                    { time: snappedEntryTime, value: trade.entry_price },
+                    { time: snappedExitTime, value: trade.exit_price }
                 ]);
                 tradeLines.push(lineSeries);
 
                 const visibleRange = chart.timeScale().getVisibleRange();
+                console.log("Current visible range:", visibleRange, "→ recentering around", snappedEntryTime);
                 if (visibleRange) {
                     const rangeSize = visibleRange.to - visibleRange.from;
-                    const from = entryTime - rangeSize / 2;
-                    const to = entryTime + rangeSize / 2;
-                    chart.timeScale().setVisibleRange({ from, to });
+                    chart.timeScale().setVisibleRange({
+                        from: snappedEntryTime - rangeSize / 2,
+                        to: snappedEntryTime + rangeSize / 2
+                    });
                 }
 
                 document.querySelectorAll("#trades tbody tr").forEach(r => r.classList.remove("selected-row"));
-                row.classList.add("selected-row");
+                clickedRow.classList.add("selected-row");
             });
 
-            tableBody.appendChild(row);
+            document.querySelector("#trades tbody").appendChild(row);
+            console.log("Attached row click listener for trade at", trade.entry_time);
 
             markers.push({
-                time: entryTime,
+                time: snappedEntryTime,
                 position: isBuy ? "belowBar" : "aboveBar",
                 color: isBuy ? "green" : "red",
                 shape: isBuy ? "arrowUp" : "arrowDown",
@@ -191,7 +259,7 @@ Volume: ${d.volume ?? '—'}`;
             });
 
             markers.push({
-                time: exitTime,
+                time: snappedExitTime,
                 position: isBuy ? "aboveBar" : "belowBar",
                 color: isBuy ? "red" : "green",
                 shape: isBuy ? "arrowDown" : "arrowUp",
@@ -200,8 +268,8 @@ Volume: ${d.volume ?? '—'}`;
 
             const lineSeries = chart.addLineSeries({ color: "gray", lineWidth: 1 });
             lineSeries.setData([
-                { time: entryTime, value: trade.entry_price },
-                { time: exitTime, value: trade.exit_price }
+                { time: snappedEntryTime, value: trade.entry_price },
+                { time: snappedExitTime, value: trade.exit_price }
             ]);
             tradeLines.push(lineSeries);
         });
@@ -225,27 +293,55 @@ window.onload = () => {
     });
 
     document.getElementById("showAllTradesBtn").addEventListener("click", () => {
-        candlestickSeries.setMarkers(markers);
-
+        candlestickSeries.setMarkers([]);
+        markers = [];
         tradeLines.forEach(line => chart.removeSeries(line));
         tradeLines = [];
 
         trades.forEach(trade => {
             const entryTime = Math.floor(new Date(trade.entry_time).getTime() / 1000);
             const exitTime = Math.floor(new Date(trade.exit_time).getTime() / 1000);
+            const isBuy = trade.side === "buy";
+
+            const entryExists = timestampExists(entryTime);
+            const exitExists = timestampExists(exitTime);
+            if (!entryExists || !exitExists) return;
+
+            const snappedEntryTime = getNearestTime(entryTime);
+            const snappedExitTime = getNearestTime(exitTime);
+
+            markers.push({
+                time: snappedEntryTime,
+                position: isBuy ? "belowBar" : "aboveBar",
+                color: isBuy ? "green" : "red",
+                shape: isBuy ? "arrowUp" : "arrowDown",
+                text: "Entry"
+            });
+
+            markers.push({
+                time: snappedExitTime,
+                position: isBuy ? "aboveBar" : "belowBar",
+                color: isBuy ? "red" : "green",
+                shape: isBuy ? "arrowDown" : "arrowUp",
+                text: "Exit"
+            });
+
             const lineSeries = chart.addLineSeries({ color: "gray", lineWidth: 1 });
             lineSeries.setData([
-                { time: entryTime, value: trade.entry_price },
-                { time: exitTime, value: trade.exit_price }
+                { time: snappedEntryTime, value: trade.entry_price },
+                { time: snappedExitTime, value: trade.exit_price }
             ]);
             tradeLines.push(lineSeries);
         });
 
+        candlestickSeries.setMarkers(markers);
         document.querySelectorAll("#trades tbody tr").forEach(r => r.classList.remove("selected-row"));
     });
 
     document.getElementById("symbol").addEventListener("change", fetchBacktests);
-    document.getElementById("timeframe").addEventListener("change", renderChart);
+    document.getElementById("timeframe").addEventListener("change", async () => {
+        await fetchBacktests();
+    });
 
     fetchBacktests();
 };
