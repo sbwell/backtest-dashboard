@@ -545,37 +545,126 @@ function renderFilters(trades) {
     const container = document.getElementById("filtersContainer");
     container.innerHTML = ""; // Clear existing filters
 
-    const metrics = ["entry_price"]; // Later add others like "atr", etc.
+    const metrics = ["entry_price"]; // Add more later
 
     metrics.forEach(metric => {
-        const values = trades.map(t => t[metric]).filter(v => v !== undefined && v !== null);
+        const values = trades.map(t => t[metric]).filter(v => typeof v === "number");
         if (values.length === 0) return;
 
         const min = Math.min(...values);
         const max = Math.max(...values);
 
         const wrapper = document.createElement("div");
-        wrapper.style.marginBottom = "15px";
+        wrapper.style.marginBottom = "20px";
 
-        wrapper.innerHTML = `
-            <label><strong>${metric}</strong></label><br/>
-            <input type="number" step="0.01" id="${metric}-min" value="${min.toFixed(2)}" style="width:80px;"> to
-            <input type="number" step="0.01" id="${metric}-max" value="${max.toFixed(2)}" style="width:80px;">
-            <input type="range" id="${metric}-slider" min="${min}" max="${max}" step="0.01" value="${max}" style="width:200px;">
-        `;
+        const label = document.createElement("label");
+        label.innerHTML = `<strong>${metric}</strong>`;
+        wrapper.appendChild(label);
 
+        // Create horizontal row layout
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.alignItems = "center";
+        row.style.gap = "12px";
+        row.style.marginTop = "5px";
+
+        // Min input
+        const minInput = document.createElement("input");
+        minInput.type = "number";
+        minInput.step = "0.01";
+        minInput.style.width = "80px";
+        minInput.value = min.toFixed(2);
+
+        // Max input
+        const maxInput = document.createElement("input");
+        maxInput.type = "number";
+        maxInput.step = "0.01";
+        maxInput.style.width = "80px";
+        maxInput.value = max.toFixed(2);
+
+        // Slider
+        const sliderDiv = document.createElement("div");
+        sliderDiv.id = `${metric}-slider`;
+        sliderDiv.style.flex = "1";
+        sliderDiv.style.marginLeft = "10px";
+
+        row.appendChild(minInput);
+        row.appendChild(document.createTextNode("to"));
+        row.appendChild(maxInput);
+        row.appendChild(sliderDiv);
+        wrapper.appendChild(row);
         container.appendChild(wrapper);
 
-        const minInput = wrapper.querySelector(`#${metric}-min`);
-        const maxInput = wrapper.querySelector(`#${metric}-max`);
-        const slider = wrapper.querySelector(`#${metric}-slider`);
-
-        // Link slider to max value
-        slider.addEventListener("input", () => {
-            maxInput.value = slider.value;
+        // noUiSlider config
+        const slider = noUiSlider.create(sliderDiv, {
+            start: [min, max],
+            connect: true,
+            tooltips: [true, true],
+            step: 0.0001,
+            range: {
+                min: min,
+                max: max
+            },
+            format: {
+                to: v => parseFloat(v).toFixed(4),
+                from: v => parseFloat(v)
+            }
         });
 
-        // Optional: later we will hook into input events to re-filter trades
+        // slider → inputs
+        slider.on("update", values => {
+            const [vMin, vMax] = values.map(parseFloat);
+            minInput.value = vMin.toFixed(2);
+            maxInput.value = vMax.toFixed(2);
+            activeFilters[metric] = [vMin, vMax];
+            updateFilteredTrades();
+        });
+
+        // inputs → slider
+        const syncInputsToSlider = () => {
+            const valMin = parseFloat(minInput.value);
+            const valMax = parseFloat(maxInput.value);
+            if (!isNaN(valMin) && !isNaN(valMax)) {
+                slider.set([valMin, valMax]);
+            }
+        };
+
+        minInput.addEventListener("change", syncInputsToSlider);
+        maxInput.addEventListener("change", syncInputsToSlider);
     });
+}
+
+function applyFilters() {
+    const filters = getActiveFilters();
+    filteredTrades = originalTrades.filter(trade => {
+        for (const metric in filters) {
+            const val = trade[metric];
+            if (val === undefined || val === null) return false;
+            const { min, max } = filters[metric];
+            if (val < min || val > max) return false;
+        }
+        return true;
+    });
+
+    renderSummary(filteredTrades, originalTrades);
+    renderTradeMarkers(filteredTrades);
+    renderTradeTable(filteredTrades);
+}
+
+function getActiveFilters() {
+    const filters = {};
+    const metrics = ["entry_price"]; // Same as used in renderFilters()
+
+    metrics.forEach(metric => {
+        const minInput = document.getElementById(`${metric}-min`);
+        const maxInput = document.getElementById(`${metric}-max`);
+        if (minInput && maxInput) {
+            const min = parseFloat(minInput.value);
+            const max = parseFloat(maxInput.value);
+            filters[metric] = { min, max };
+        }
+    });
+
+    return filters;
 }
 
