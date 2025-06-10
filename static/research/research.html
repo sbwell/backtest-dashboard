@@ -61,55 +61,148 @@
 
     tr:nth-child(even) {
       background-color: #fafafa;
-      }
+    }
 
     .selected-row {
       background-color: #d2e9ff !important;
+    }
+
+    .tab-nav {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 10px;
+    }
+
+    .tab-nav li {
+      padding: 8px 16px;
+      cursor: pointer;
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      margin-right: 5px;
+    }
+
+    .tab-nav li.active {
+      background: white;
+      font-weight: bold;
+    }
+
+    .tab-content {
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: white;
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
     }
   </style>
 </head>
 <body>
   <h2>Research Dashboard</h2>
+
   <div style="margin-bottom: 10px;">
     <label for="symbol">Symbol:</label>
     <select id="symbol">
-        <option value="EURUSD">EURUSD</option>
-        <option value="GBPUSD">GBPUSD</option>
-        <option value="USDJPY">USDJPY</option>
-        <option value="USDCAD">USDCAD</option>
-        <option value="USDCHF">USDCHF</option>
-        <option value="AUDUSD">AUDUSD</option>
-        <option value="NZDUSD">NZDUSD</option>
+      <option value="EURUSD">EURUSD</option>
+      <option value="GBPUSD">GBPUSD</option>
+      <option value="USDJPY">USDJPY</option>
+      <option value="USDCAD">USDCAD</option>
+      <option value="USDCHF">USDCHF</option>
+      <option value="AUDUSD">AUDUSD</option>
+      <option value="NZDUSD">NZDUSD</option>
     </select>
 
     <label for="timeframe" style="margin-left: 20px;">Timeframe:</label>
     <select id="timeframe">
-        <option value="M1">1 Minute</option>
-        <option value="M5" selected>5 Minute</option>
-        <option value="M15">15 Minute</option>
-        <option value="H1" >1 Hour</option>
-        <option value="H4">4 Hour</option>
-        <option value="D1">1 Day</option>
+      <option value="M1">1 Minute</option>
+      <option value="M5" selected>5 Minute</option>
+      <option value="M15">15 Minute</option>
+      <option value="H1">1 Hour</option>
+      <option value="H4">4 Hour</option>
+      <option value="D1">1 Day</option>
     </select>
-
   </div>
 
-  <div id="chart-wrapper">
-    <div id="chart"></div>
-    <div id="hoverBox"></div>
+  <div id="layout" style="display: flex; align-items: flex-start;">
+    <div id="chart-wrapper">
+      <div id="chart"></div>
+      <div id="hoverBox"></div>
+    </div>
+
+    <div id="rightPanel" style="margin-left: 20px; display: flex; flex-direction: column; width: 700px;">
+      <div id="summaryPanel" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 20px;">
+        <h3>Summary</h3>
+        <table id="summaryTable" style="width: 100%; font-size: 13px;">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Filtered</th>
+              <th>Original</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Profit</strong></td><td id="sumProfitFiltered">—</td><td id="sumProfitOriginal">—</td></tr>
+            <tr><td><strong>Efficiency</strong></td><td id="sumEfficiencyFiltered">—</td><td id="sumEfficiencyOriginal">—</td></tr>
+            <tr><td><strong>Trades</strong></td><td id="sumTradesFiltered">—</td><td id="sumTradesOriginal">—</td></tr>
+            <tr><td><strong>Win %</strong></td><td id="sumWinRateFiltered">—</td><td id="sumWinRateOriginal">—</td></tr>
+            <tr><td><strong>Start</strong></td><td id="sumStartFiltered">—</td><td id="sumStartOriginal">—</td></tr>
+            <tr><td><strong>End</strong></td><td id="sumEndFiltered">—</td><td id="sumEndOriginal">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tabs -->
+      <div style="margin-top: 10px;">
+        <ul class="tab-nav">
+          <li class="active" data-tab="tab-filters">Filters</li>
+          <li data-tab="tab-buckets">Buckets</li>
+        </ul>
+
+        <div class="tab-content">
+          <div id="tab-filters" class="tab-pane active">
+              <div id="filtersContainer">
+                <!-- Dynamic filter rows will be inserted here -->
+              </div>
+          </div>
+          <div id="tab-buckets" class="tab-pane">
+            <div id="entryPriceBreakdown">
+              <h4>By Entry Price Range</h4>
+              <table style="width: 100%; font-size: 12px;">
+                <thead>
+                  <tr>
+                    <th>Bucket</th>
+                    <th>Profit</th>
+                    <th>Trades</th>
+                    <th>Win %</th>
+                    <th>Efficiency</th>
+                    <th>Min</th>
+                    <th>Max</th>
+                  </tr>
+                </thead>
+                <tbody id="entryPriceBreakdownBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div style="margin-top: 20px;">
-  <button id="showAllTradesBtn" style="margin-left: 20px;">Show All Trades</button>
-  <button id="clearTradesBtn">Clear Trades</button>
+    <button id="showAllTradesBtn" style="margin-left: 20px;">Show All Trades</button>
+    <button id="clearTradesBtn">Clear Trades</button>
 
-  <label for="backtest-select" style="margin-right: 10px;">Backtest:</label>
-  <select id="backtest-select"></select>
-  <button id="loadBacktestBtn">Load Backtest</button>
-
+    <label for="backtest-select" style="margin-right: 10px;">Backtest:</label>
+    <select id="backtest-select"></select>
+    <button id="loadBacktestBtn">Load Backtest</button>
   </div>
-  
-<!--  <table id="trade-table"></table> -->
 
   <table id="trades" class="display">
     <thead>
@@ -127,6 +220,21 @@
   </table>
 
   <script src="/static/research/chart.js"></script>
+
+  <script>
+    document.querySelectorAll('.tab-nav li').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Deactivate all tabs
+        document.querySelectorAll('.tab-nav li').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+        // Activate selected tab
+        tab.classList.add('active');
+        const tabId = tab.getAttribute('data-tab');
+        document.getElementById(tabId).classList.add('active');
+      });
+    });
+  </script>
 
 </body>
 </html>

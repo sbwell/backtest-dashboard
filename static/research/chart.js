@@ -5,6 +5,8 @@ let markers = [];
 let tradeLines = [];
 let selectedBacktestId = null;
 let chartData = [];
+let originalTrades = [];
+let filteredTrades = [];
 
 async function fetchBacktests() {
     console.log("Fetching backtests...");
@@ -168,6 +170,14 @@ Volume: ${d.volume ?? '—'}`;
     try {
         const tradeRes = await fetch(`/trades?backtest_id=${selectedBacktestId}&symbol=${symbol}`);
         trades = await tradeRes.json();
+        
+        originalTrades = [...trades];
+        filteredTrades = [...originalTrades];
+
+        renderSummary(filteredTrades, originalTrades);
+        renderFilters(originalTrades);
+        renderEntryPriceBreakdown(getEntryPriceBuckets(originalTrades));
+
         console.log("Fetched trades:", trades.length);
 
         markers = [];
@@ -431,4 +441,141 @@ window.onload = () => {
 
     fetchBacktests();
 };
+
+function renderSummary(filtered, original) {
+    function summarize(trades) {
+        const total = trades.length;
+        const profit = trades.reduce((acc, t) => acc + (t.pnl ?? 0), 0);
+        const wins = trades.filter(t => t.pnl > 0).length;
+        const efficiency = total > 0 ? profit / total : 0;
+        const winRate = total > 0 ? (wins / total) * 100 : 0;
+        const start = total > 0 ? new Date(trades[0].entry_time).toLocaleString() : "—";
+        const end = total > 0 ? new Date(trades.at(-1).exit_time).toLocaleString() : "—";
+        return { profit, efficiency, total, winRate, start, end };
+    }
+
+    const f = summarize(filtered);
+    const o = summarize(original);
+
+    document.getElementById("sumProfitFiltered").textContent = f.profit.toFixed(2);
+    document.getElementById("sumEfficiencyFiltered").textContent = f.efficiency.toFixed(2);
+    document.getElementById("sumTradesFiltered").textContent = f.total;
+    document.getElementById("sumWinRateFiltered").textContent = f.winRate.toFixed(1) + "%";
+    document.getElementById("sumStartFiltered").textContent = f.start;
+    document.getElementById("sumEndFiltered").textContent = f.end;
+
+    document.getElementById("sumProfitOriginal").textContent = o.profit.toFixed(2);
+    document.getElementById("sumEfficiencyOriginal").textContent = o.efficiency.toFixed(2);
+    document.getElementById("sumTradesOriginal").textContent = o.total;
+    document.getElementById("sumWinRateOriginal").textContent = o.winRate.toFixed(1) + "%";
+    document.getElementById("sumStartOriginal").textContent = o.start;
+    document.getElementById("sumEndOriginal").textContent = o.end;
+}
+
+const activeFilters = {};
+
+function getEntryPriceBuckets(trades) {
+    const prices = trades.map(t => t.entry_price).filter(v => typeof v === 'number');
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min;
+    const step = range / 6;
+
+    const buckets = [];
+    for (let i = 0; i < 6; i++) {
+        const bMin = +(min + i * step).toFixed(4);
+        const bMax = +(min + (i + 1) * step).toFixed(4);
+        const group = trades.filter(t => t.entry_price >= bMin && t.entry_price < bMax);
+        const profit = group.reduce((acc, t) => acc + (t.pnl ?? 0), 0);
+        const count = group.length;
+        const wins = group.filter(t => t.pnl > 0).length;
+        const efficiency = count > 0 ? profit / count : 0;
+        const winRate = count > 0 ? (wins / count) * 100 : 0;
+        buckets.push({ min: bMin, max: bMax, profit, count, winRate, efficiency });
+    }
+
+    return buckets;
+}
+
+function renderEntryPriceBreakdown(rows) {
+    const body = document.getElementById("entryPriceBreakdownBody");
+    body.innerHTML = "";
+
+    rows.forEach(row => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${row.min}–${row.max}</td>
+            <td>${row.profit.toFixed(2)}</td>
+            <td>${row.count}</td>
+            <td>${row.winRate.toFixed(1)}%</td>
+            <td>${row.efficiency.toFixed(4)}</td>
+            <td><input type="number" step="0.0001" value="${row.min}" class="entryMin"></td>
+            <td><input type="number" step="0.0001" value="${row.max}" class="entryMax"></td>
+        `;
+
+        body.appendChild(tr);
+    });
+
+    body.querySelectorAll(".entryMin, .entryMax").forEach(input => {
+        input.addEventListener("change", () => {
+            const mins = Array.from(body.querySelectorAll(".entryMin")).map(i => parseFloat(i.value));
+            const maxs = Array.from(body.querySelectorAll(".entryMax")).map(i => parseFloat(i.value));
+            const globalMin = Math.min(...mins);
+            const globalMax = Math.max(...maxs);
+            activeFilters.entry_price = [globalMin, globalMax];
+            updateFilteredTrades();
+        });
+    });
+}
+
+function updateFilteredTrades() {
+    filteredTrades = originalTrades.filter(t => {
+        for (const [key, [min, max]] of Object.entries(activeFilters)) {
+            const value = t[key];
+            if (value == null || value < min || value > max) return false;
+        }
+        return true;
+    });
+
+    renderSummary(filteredTrades, originalTrades);
+}
+
+function renderFilters(trades) {
+    const container = document.getElementById("filtersContainer");
+    container.innerHTML = ""; // Clear existing filters
+
+    const metrics = ["entry_price"]; // Later add others like "atr", etc.
+
+    metrics.forEach(metric => {
+        const values = trades.map(t => t[metric]).filter(v => v !== undefined && v !== null);
+        if (values.length === 0) return;
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+
+        const wrapper = document.createElement("div");
+        wrapper.style.marginBottom = "15px";
+
+        wrapper.innerHTML = `
+            <label><strong>${metric}</strong></label><br/>
+            <input type="number" step="0.01" id="${metric}-min" value="${min.toFixed(2)}" style="width:80px;"> to
+            <input type="number" step="0.01" id="${metric}-max" value="${max.toFixed(2)}" style="width:80px;">
+            <input type="range" id="${metric}-slider" min="${min}" max="${max}" step="0.01" value="${max}" style="width:200px;">
+        `;
+
+        container.appendChild(wrapper);
+
+        const minInput = wrapper.querySelector(`#${metric}-min`);
+        const maxInput = wrapper.querySelector(`#${metric}-max`);
+        const slider = wrapper.querySelector(`#${metric}-slider`);
+
+        // Link slider to max value
+        slider.addEventListener("input", () => {
+            maxInput.value = slider.value;
+        });
+
+        // Optional: later we will hook into input events to re-filter trades
+    });
+}
 
