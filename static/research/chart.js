@@ -568,19 +568,44 @@ function renderFilters(trades) {
         row.style.gap = "12px";
         row.style.marginTop = "5px";
 
+        console.log("Min:", min.toFixed(4), "Max:", max.toFixed(4));
+
         // Min input
         const minInput = document.createElement("input");
         minInput.type = "number";
-        minInput.step = "0.01";
+        minInput.step = "0.0001";
         minInput.style.width = "80px";
-        minInput.value = min.toFixed(2);
+        minInput.id = `${metric}-min`; 
+        minInput.value = `${min.toFixed(4)}`;
+        minInput.inputMode = "decimal";
+        minInput.style.textAlign = "right";
+        minInput.setAttribute("pattern", "\\d*\\.\\d{4}");
 
         // Max input
         const maxInput = document.createElement("input");
         maxInput.type = "number";
-        maxInput.step = "0.01";
+        maxInput.step = "0.0001";
         maxInput.style.width = "80px";
-        maxInput.value = max.toFixed(2);
+        maxInput.id = `${metric}-max`;
+        maxInput.value = `${max.toFixed(4)}`;
+        maxInput.inputMode = "decimal";
+        maxInput.style.textAlign = "right";
+        maxInput.setAttribute("pattern", "\\d*\\.\\d{4}");
+
+        minInput.addEventListener("change", () => {
+            minInput.value = parseFloat(minInput.value).toFixed(4);
+        });
+       maxInput.addEventListener("change", () => {
+            maxInput.value = parseFloat(maxInput.value).toFixed(4);
+        });
+
+        minInput.addEventListener("blur", () => {
+            minInput.value = parseFloat(minInput.value).toFixed(4);
+        });
+        maxInput.addEventListener("blur", () => {
+            maxInput.value = parseFloat(maxInput.value).toFixed(4);
+        });
+
 
         // Slider
         const sliderDiv = document.createElement("div");
