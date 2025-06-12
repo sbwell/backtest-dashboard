@@ -71,7 +71,15 @@ async function renderChart() {
         timeScale: {
             borderVisible: true,
             timeVisible: true,
-            borderColor: "#D1D4DC"
+            borderColor: "#D1D4DC",
+            timeFormatter: (time) => {
+                const d = new Date(time * 1000);
+                return d.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            }
         },
         localization: {
             priceFormatter: price => Number(price).toFixed(isJPY ? 2 : 4)
@@ -533,7 +541,10 @@ function updateFilteredTrades() {
     filteredTrades = originalTrades.filter(t => {
         for (const [key, [min, max]] of Object.entries(activeFilters)) {
             const value = t[key];
-            if (value == null || value < min || value > max) return false;
+            if (value == null) return false;
+
+            const EPSILON = 0.00009;
+            if (value < min - EPSILON || value > max + EPSILON) return false;
         }
         return true;
     });
@@ -612,7 +623,8 @@ function renderFilters(trades) {
         sliderDiv.id = `${metric}-slider`;
         sliderDiv.style.flex = "1";
         sliderDiv.style.marginLeft = "10px";
-
+        sliderDiv.style.width = "100%";
+        sliderDiv.style.maxWidth = "300px";
         row.appendChild(minInput);
         row.appendChild(document.createTextNode("to"));
         row.appendChild(maxInput);
@@ -639,8 +651,8 @@ function renderFilters(trades) {
         // slider → inputs
         slider.on("update", values => {
             const [vMin, vMax] = values.map(parseFloat);
-            minInput.value = vMin.toFixed(2);
-            maxInput.value = vMax.toFixed(2);
+            minInput.value = vMin.toFixed(4);
+            maxInput.value = vMax.toFixed(4);
             activeFilters[metric] = [vMin, vMax];
             updateFilteredTrades();
         });
