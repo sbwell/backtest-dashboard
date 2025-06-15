@@ -15,3 +15,9 @@ To https://github.com/sbwell/backtest-dashboard.git
  1 file changed, 4 insertions(+)
 To https://github.com/sbwell/backtest-dashboard.git
    2722477..73712e9  main -> main
+[main 13388db] Auto backup 2025-06-14 04:00:01
+ 3 files changed, 200 insertions(+)
+ create mode 100644 enrich_ohlcv.py
+ create mode 100644 import_csvs_to_sqlite.py
+To https://github.com/sbwell/backtest-dashboard.git
+   73712e9..13388db  main -> main
