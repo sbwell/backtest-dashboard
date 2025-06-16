@@ -21,3 +21,7 @@ To https://github.com/sbwell/backtest-dashboard.git
  create mode 100644 import_csvs_to_sqlite.py
 To https://github.com/sbwell/backtest-dashboard.git
    73712e9..13388db  main -> main
+[main d931144] Auto backup 2025-06-15 04:00:01
+ 1 file changed, 6 insertions(+)
+To https://github.com/sbwell/backtest-dashboard.git
+   13388db..d931144  main -> main
