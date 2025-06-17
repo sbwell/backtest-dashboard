@@ -36,6 +36,14 @@ for table in tables:
         continue
 
     print(f"🧱 Enriching D1 table: {table}")
+
+    # Check if already enriched
+    cursor.execute(f"PRAGMA table_info({table})")
+    existing = [r[1] for r in cursor.fetchall()]
+    if all(col in existing for col in ["atr_20d", "avg_volume_20d", "rvol"]):
+        print(f"⏩ Skipping {table} — already enriched")
+        continue
+
     df = pd.read_sql(f"SELECT * FROM {table}", conn)
     if "timestamp" not in df.columns or df.empty:
         continue
@@ -52,7 +60,7 @@ for table in tables:
     df["avg_volume_20d"] = df["volume"].rolling(20).mean()
     df["rvol"] = df["volume"] / df["avg_volume_20d"]
 
-    for i, row in df.iterrows():
+    for _, row in df.iterrows():
         cursor.execute(
             f"UPDATE {table} SET atr_20d = ?, avg_volume_20d = ?, rvol = ? WHERE timestamp = ?",
             (
@@ -74,6 +82,17 @@ for table in tables:
         continue
 
     print(f"⏳ Enriching {table} ({tf_suffix})")
+
+    # Check if already enriched before loading the table
+    required_columns = ["atr_20d", "avg_volume_20d", "rvol"] + \
+        [f"move_{p}" for p in movement_periods] + [f"move_{p}_atr" for p in movement_periods] + \
+        [f"range_{p}" for p in range_periods] + [f"range_{p}_atr" for p in range_periods]
+    cursor.execute(f"PRAGMA table_info({table})")
+    existing_columns = [r[1] for r in cursor.fetchall()]
+    if all(col in existing_columns for col in required_columns):
+        print(f"⏩ Skipping {table} — already enriched")
+        continue
+
     df = pd.read_sql(f"SELECT * FROM {table}", conn)
     if "timestamp" not in df.columns or df.empty:
         continue
@@ -108,25 +127,17 @@ for table in tables:
     for label, mins in movement_periods.items():
         shift = int(mins / tf_mins)
         df[f"move_{label}"] = df["close"] - df["close"].shift(shift)
-        if "atr_20d" in df.columns:
-            df[f"move_{label}_atr"] = df[f"move_{label}"] / df["atr_20d"]
-        else:
-            df[f"move_{label}_atr"] = None
+        df[f"move_{label}_atr"] = df[f"move_{label}"] / df["atr_20d"] if "atr_20d" in df.columns else None
 
     # Range
     for label, mins in range_periods.items():
         window = int(mins / tf_mins)
         df[f"range_{label}"] = df["high"].rolling(window).max() - df["low"].rolling(window).min()
-        if "atr_20d" in df.columns:
-            df[f"range_{label}_atr"] = df[f"range_{label}"] / df["atr_20d"]
-        else:
-            df[f"range_{label}_atr"] = None
+        df[f"range_{label}_atr"] = df[f"range_{label}"] / df["atr_20d"] if "atr_20d" in df.columns else None
 
-    # Write to DB
     update_cols = [f"move_{p}" for p in movement_periods] + [f"move_{p}_atr" for p in movement_periods] + \
-              [f"range_{p}" for p in range_periods] + [f"range_{p}_atr" for p in range_periods] + \
-              ["atr_20d", "avg_volume_20d", "rvol"]
-
+                  [f"range_{p}" for p in range_periods] + [f"range_{p}_atr" for p in range_periods] + \
+                  ["atr_20d", "avg_volume_20d", "rvol"]
     valid_update_cols = [col for col in update_cols if col in df.columns]
 
     for _, row in df.iterrows():
