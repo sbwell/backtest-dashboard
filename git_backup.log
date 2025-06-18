@@ -29,3 +29,8 @@ To https://github.com/sbwell/backtest-dashboard.git
  1 file changed, 4 insertions(+)
 To https://github.com/sbwell/backtest-dashboard.git
    d931144..d1e9047  main -> main
+[main d9179ec] Auto backup 2025-06-17 04:00:02
+ 3 files changed, 28 insertions(+), 13 deletions(-)
+ create mode 100644 ohlcv.db-journal
+To https://github.com/sbwell/backtest-dashboard.git
+   d1e9047..d9179ec  main -> main
