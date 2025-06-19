@@ -34,3 +34,11 @@ To https://github.com/sbwell/backtest-dashboard.git
  create mode 100644 ohlcv.db-journal
 To https://github.com/sbwell/backtest-dashboard.git
    d1e9047..d9179ec  main -> main
+[main 6352a0a] Auto backup 2025-06-18 04:00:01
+ 5 files changed, 274 insertions(+)
+ create mode 100644 enrich_1m_tables.py
+ create mode 100644 enrich_d1_tables.py
+ create mode 100644 enrich_intraday_tables.py
+ delete mode 100644 ohlcv.db-journal
+To https://github.com/sbwell/backtest-dashboard.git
+   d9179ec..6352a0a  main -> main

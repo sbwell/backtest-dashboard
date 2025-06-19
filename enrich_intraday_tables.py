@@ -10,12 +10,15 @@ timeframe_minutes = {
 }
 movement_periods = {"1h": 60, "2h": 120, "1d": 1440}
 range_periods = {"15m": 15, "60m": 60, "2h": 120, "1d": 1440}
+priority_order = ["H4", "H1", "M15", "M5"]
 
+# Load tables
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
 tables = [t[0] for t in cursor.fetchall() if t[0].startswith("candles_")]
 
+# Helper functions
 def get_tf_minutes(name):
     for tf, mins in timeframe_minutes.items():
         if name.endswith(tf):
@@ -27,10 +30,20 @@ def ensure_column(table, column, dtype):
     if column not in [r[1] for r in cursor.fetchall()]:
         cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {dtype}")
 
-# Phase: Enrich All Intraday Tables EXCEPT M1
-for table in tables:
+# Order tables based on priority
+def get_sort_key(table_name):
+    tf_suffix, _ = get_tf_minutes(table_name)
+    return priority_order.index(tf_suffix) if tf_suffix in priority_order else 999
+
+tables_to_process = sorted(
+    [t for t in tables if get_tf_minutes(t)[0] in priority_order],
+    key=get_sort_key
+)
+
+# Main enrichment loop
+for table in tables_to_process:
     tf_suffix, tf_mins = get_tf_minutes(table)
-    if tf_suffix in ["D1", "M1"] or not tf_suffix:
+    if not tf_suffix or tf_suffix == "D1":
         continue
 
     print(f"⏳ Enriching {table} ({tf_suffix})")
@@ -38,11 +51,12 @@ for table in tables:
     df = pd.read_sql(f"SELECT * FROM {table}", conn)
     if "timestamp" not in df.columns or df.empty:
         continue
+
     df = df.sort_values("timestamp").reset_index(drop=True)
     df["dt"] = pd.to_datetime(df["timestamp"], unit="s")
     df["date"] = df["dt"].dt.date
 
-    # Add required columns
+    # Ensure columns exist in table
     for col in ["atr_20d", "avg_volume_20d", "rvol"]:
         ensure_column(table, col, "REAL")
     for p in movement_periods:
@@ -82,7 +96,7 @@ for table in tables:
         if atr_available and "atr_20d" in df.columns:
             df[f"range_{label}_atr"] = df[f"range_{label}"] / df["atr_20d"]
 
-    # Update all enriched columns
+    # Update values back to table
     update_cols = [f"move_{p}" for p in movement_periods] + [f"move_{p}_atr" for p in movement_periods] + \
                   [f"range_{p}" for p in range_periods] + [f"range_{p}_atr" for p in range_periods] + \
                   ["atr_20d", "avg_volume_20d", "rvol"]

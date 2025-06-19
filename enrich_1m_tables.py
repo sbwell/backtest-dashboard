@@ -1,6 +1,7 @@
 import sqlite3
 import pandas as pd
 from datetime import datetime
+import time
 
 # Config
 db_path = "/opt/chart_dashboard/ohlcv.db"
@@ -31,7 +32,7 @@ cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
 tables = [t[0] for t in cursor.fetchall() if t[0].endswith("M1") and t[0].startswith("candles_")]
 
 for table in tables:
-    print(f"📈 Enriching M1 table in batches: {table}")
+    print(f"\n🔍 Starting enrichment for: {table}")
     tf_suffix, tf_mins = get_tf_minutes(table)
 
     # Add columns if needed
@@ -55,8 +56,13 @@ for table in tables:
     # Get total number of rows
     cursor.execute(f"SELECT COUNT(*) FROM {table}")
     total_rows = cursor.fetchone()[0]
+    total_batches = (total_rows + batch_size - 1) // batch_size
 
-    for offset in range(0, total_rows, batch_size):
+    print(f"📊 Total rows: {total_rows} — Estimated batches: {total_batches}")
+    full_start = time.time()
+
+    for i, offset in enumerate(range(0, total_rows, batch_size)):
+        batch_start = time.time()
         real_offset = max(0, offset - overlap)
         limit = batch_size + (offset - real_offset)
 
@@ -96,7 +102,14 @@ for table in tables:
             cursor.execute(sql, values)
 
         conn.commit()
-        print(f"✅ Batch starting at row {offset} committed")
+        batch_time = time.time() - batch_start
+        remaining_batches = total_batches - (i + 1)
+        estimated_remaining = remaining_batches * batch_time
 
-print("🎉 All M1 tables enriched in batches.")
+        print(f"✅ [{i+1}/{total_batches}] Batch committed — {batch_time:.2f}s, est. {estimated_remaining/60:.1f} min left")
+
+    total_time = time.time() - full_start
+    print(f"🏁 Finished {table} in {total_time/60:.2f} min")
+
+print("\n🎉 All M1 tables enriched in batches.")
 conn.close()
