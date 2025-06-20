@@ -9,18 +9,22 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet" />
   <style>
-    #chart-wrapper {
-      position: relative;
-      width: 800px;
-      margin: 0 auto;
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+    }
+
+    #layout {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
     }
 
     #chart {
-      width: 800px;
       height: 500px;
-      max-width: 1000px;
+      width: 100%;
       background-color: white;
-      overflow: visible;
+      position: relative;
     }
 
     #hoverBox {
@@ -30,42 +34,51 @@
       background-color: rgba(255,255,255,0.9);
       border: 1px solid #ccc;
       padding: 8px;
-      font-family: Arial, sans-serif;
       font-size: 13px;
       z-index: 10;
       pointer-events: none;
       white-space: pre-line;
     }
 
+    #chart-controls {
+      margin: 10px 0;
+    }
+
+    #tradesTableContainer {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
     #trades {
       width: 100%;
-      margin-top: 20px;
+      font-size: 12px;
     }
 
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 20px;
-      font-family: sans-serif;
-      font-size: 14px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
+    #trades th, #trades td {
+      padding: 4px 6px;
       text-align: center;
+      border: 1px solid #ccc;
     }
 
-    th {
+    #trades thead {
       background-color: #f2f2f2;
     }
 
-    tr:nth-child(even) {
+    #trades tbody tr:nth-child(even) {
       background-color: #fafafa;
     }
 
-    .selected-row {
-      background-color: #d2e9ff !important;
+    #trades tbody tr.selected-row {
+      background-color: #d0ebff !important;
+    }
+
+    #summaryPanel {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 20px;
+      background: white;
     }
 
     .tab-nav {
@@ -108,6 +121,7 @@
 <body>
   <h2>Research Dashboard</h2>
 
+  <!-- Symbol & Timeframe -->
   <div style="margin-bottom: 10px;">
     <label for="symbol">Symbol:</label>
     <select id="symbol">
@@ -131,14 +145,46 @@
     </select>
   </div>
 
-  <div id="layout" style="display: flex; align-items: flex-start;">
-    <div id="chart-wrapper">
-      <div id="chart"></div>
-      <div id="hoverBox"></div>
+  <!-- Layout -->
+  <div id="layout">
+    <!-- LEFT: Chart, Controls, Trades -->
+    <div style="flex: 2;">
+      <div id="chart">
+        <div id="hoverBox"></div>
+      </div>
+
+      <!-- Buttons and backtest selector -->
+      <div id="chart-controls">
+        <button id="showAllTradesBtn">Show All Trades</button>
+        <button id="clearTradesBtn">Clear Trades</button>
+        <label for="backtest-select" style="margin-left: 10px;">Backtest:</label>
+        <select id="backtest-select" style="margin-right: 10px;"></select>
+        <button id="loadBacktestBtn">Load Backtest</button>
+      </div>
+
+      <!-- Trades Table -->
+      <div id="tradesTableContainer">
+        <table id="trades" class="display compact">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Entry Time</th>
+              <th>Exit Time</th>
+              <th>Type</th>
+              <th>Entry Price</th>
+              <th>Exit Price</th>
+              <th>PnL</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
-    <div id="rightPanel" style="margin-left: 20px; display: flex; flex-direction: column; width: 700px;">
-      <div id="summaryPanel" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 20px;">
+    <!-- RIGHT: Summary + Filters + Buckets -->
+    <div style="flex: 1;">
+      <!-- Summary -->
+      <div id="summaryPanel">
         <h3>Summary</h3>
         <table id="summaryTable" style="width: 100%; font-size: 13px;">
           <thead>
@@ -159,8 +205,8 @@
         </table>
       </div>
 
-      <!-- Tabs -->
-      <div style="margin-top: 10px;">
+      <!-- Filters/Buckets Tabs -->
+      <div>
         <ul class="tab-nav">
           <li class="active" data-tab="tab-filters">Filters</li>
           <li data-tab="tab-buckets">Buckets</li>
@@ -168,78 +214,32 @@
 
         <div class="tab-content">
           <div id="tab-filters" class="tab-pane active">
-              <div id="filtersContainer">
-                <!-- Dynamic filter rows will be inserted here -->
-              </div>
+            <div id="filtersContainer"></div>
           </div>
+
           <div id="tab-buckets" class="tab-pane">
-            <div id="entryPriceBreakdown">
-              <h4>By Entry Price Range</h4>
-              <table style="width: 100%; font-size: 12px;">
-                <thead>
-                  <tr>
-                    <th>Bucket</th>
-                    <th>Profit</th>
-                    <th>Trades</th>
-                    <th>Win %</th>
-                    <th>Efficiency</th>
-                    <th>Min</th>
-                    <th>Max</th>
-                  </tr>
-                </thead>
-                <tbody id="entryPriceBreakdownBody"></tbody>
-              </table>
-            </div>
+            <div id="tab-buckets"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div style="margin-top: 20px;">
-    <button id="showAllTradesBtn" style="margin-left: 20px;">Show All Trades</button>
-    <button id="clearTradesBtn">Clear Trades</button>
-
-    <label for="backtest-select" style="margin-right: 10px;">Backtest:</label>
-    <select id="backtest-select"></select>
-    <button id="loadBacktestBtn">Load Backtest</button>
-  </div>
-
-  <table id="trades" class="display">
-    <thead>
-      <tr>
-        <th>Symbol</th>
-        <th>Entry Time</th>
-        <th>Exit Time</th>
-        <th>Type</th>
-        <th>Entry Price</th>
-        <th>Exit Price</th>
-        <th>PnL</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  
+  <!-- Scripts -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css">
   <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
-
   <script src="/static/research/chart.js"></script>
 
   <script>
+    // Tab switching logic
     document.querySelectorAll('.tab-nav li').forEach(tab => {
       tab.addEventListener('click', () => {
-        // Deactivate all tabs
         document.querySelectorAll('.tab-nav li').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-
-        // Activate selected tab
         tab.classList.add('active');
-        const tabId = tab.getAttribute('data-tab');
-        document.getElementById(tabId).classList.add('active');
+        document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
       });
     });
   </script>
-
 </body>
 </html>
-
