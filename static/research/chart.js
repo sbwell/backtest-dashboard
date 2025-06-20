@@ -293,6 +293,12 @@ function getNearestTime(ts) {
     return chartData[closestIndex].time;
 }
 
+window.addEventListener("resize", () => {
+    if (!chart) return;
+    const chartContainer = document.getElementById("chart");
+    chart.resize(chartContainer.clientWidth, 500);
+});
+
 function updateFilteredTrades() {
     filteredTrades = originalTrades.filter(t => {
         for (const [key, [min, max]] of Object.entries(activeFilters)) {
