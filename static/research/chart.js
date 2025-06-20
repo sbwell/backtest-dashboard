@@ -435,53 +435,154 @@ function renderAllBuckets(trades) {
         const values = trades.map(t => t[metric]).filter(v => typeof v === "number");
         if (values.length === 0) return;
 
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        const step = (max - min) / 6;
+        let min = Math.min(...values);
+        let max = Math.max(...values);
+        const range = max - min;
 
-        const buckets = [];
-        for (let i = 0; i < 6; i++) {
-            const bMin = +(min + i * step).toFixed(4);
-            const bMax = +(min + (i + 1) * step).toFixed(4);
-            const group = trades.filter(t => t[metric] >= bMin && t[metric] < bMax);
-            const profit = group.reduce((acc, t) => acc + (t.pnl ?? 0), 0);
-            const count = group.length;
-            const wins = group.filter(t => t.pnl > 0).length;
-            const efficiency = count > 0 ? profit / count : 0;
-            const winRate = count > 0 ? (wins / count) * 100 : 0;
-            buckets.push({ min: bMin, max: bMax, profit, count, winRate, efficiency });
+        // Determine rounded step like 0.01, 0.005, etc.
+        function getNiceStep(r) {
+            const pow = Math.pow(10, Math.floor(Math.log10(r / 6)));
+            const candidates = [1, 0.5, 0.25, 0.2, 0.1, 0.05, 0.025, 0.01, 0.005, 0.001];
+            for (const c of candidates) {
+                const step = c * pow;
+                if (r / step <= 10) return step;
+            }
+            return pow;
+        }
+
+        const step = getNiceStep(range);
+        min = Math.floor(min / step) * step;
+        max = Math.ceil(max / step) * step;
+
+        const defaultBoundaries = [];
+        for (let i = 0; i <= 6; i++) {
+            let boundary = +(min + i * step).toFixed(4);
+            if (i === 0) boundary = -999999;
+            if (i === 6) boundary = 999999;
+            defaultBoundaries.push(boundary);
         }
 
         const section = document.createElement("div");
-        section.innerHTML = `
-            <h4>By ${metric}</h4>
-            <table style="width:100%; font-size: 12px;">
-              <thead>
-                <tr>
-                  <th>Bucket</th>
-                  <th>Profit</th>
-                  <th>Trades</th>
-                  <th>Win %</th>
-                  <th>Efficiency</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${buckets.map(b => `
-                  <tr>
-                    <td>${b.min}–${b.max}</td>
-                    <td>${b.profit.toFixed(2)}</td>
-                    <td>${b.count}</td>
-                    <td>${b.winRate.toFixed(1)}%</td>
-                    <td>${b.efficiency.toFixed(4)}</td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
+        section.innerHTML = `<h4>${metric}</h4>`;
+        section.style.marginBottom = "20px";
+
+        const table = document.createElement("table");
+        table.style.width = "100%";
+        table.style.fontSize = "12px";
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Min</th>
+              <th>Max</th>
+              <th>Profit</th>
+              <th>Trades</th>
+              <th>Win %</th>
+              <th>Efficiency</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
         `;
-        section.style.marginBottom = "30px";
+
+        const tbody = table.querySelector("tbody");
+
+        const rows = [];
+
+        for (let i = 0; i < 6; i++) {
+            const row = document.createElement("tr");
+
+            const bMin = defaultBoundaries[i];
+            const bMax = defaultBoundaries[i + 1];
+
+            const inputMin = document.createElement("input");
+            inputMin.type = "number";
+            inputMin.step = "0.0001";
+            inputMin.value = bMin;
+            inputMin.style.width = "80px";
+
+            const inputMax = document.createElement("input");
+            inputMax.type = "number";
+            inputMax.step = "0.0001";
+            inputMax.value = bMax;
+            inputMax.style.width = "80px";
+
+            const cells = [];
+            for (let j = 0; j < 6; j++) {
+                const td = document.createElement("td");
+                if (j === 0) td.appendChild(inputMin);
+                else if (j === 1) td.appendChild(inputMax);
+                cells.push(td);
+                row.appendChild(td);
+            }
+
+            tbody.appendChild(row);
+            rows.push({ inputMin, inputMax, cells });
+        }
+
+        // Add cross-updating logic and stat updates
+        rows.forEach((rowObj, i) => {
+            const { inputMin, inputMax, cells } = rowObj;
+
+            const updateStats = () => {
+                const minVal = parseFloat(inputMin.value);
+                const maxVal = parseFloat(inputMax.value);
+                const group = trades.filter(t => t[metric] >= minVal && t[metric] < maxVal);
+                const profit = group.reduce((acc, t) => acc + (t.pnl ?? 0), 0);
+                const count = group.length;
+                const wins = group.filter(t => t.pnl > 0).length;
+                const winRate = count > 0 ? (wins / count) * 100 : 0;
+                const efficiency = count > 0 ? profit / count : 0;
+
+                cells[2].textContent = profit.toFixed(2);
+                cells[3].textContent = count;
+                cells[4].textContent = winRate.toFixed(1) + "%";
+                cells[5].textContent = efficiency.toFixed(4);
+            };
+
+            inputMin.addEventListener("change", () => {
+                let minVal = parseFloat(inputMin.value);
+                let maxVal = parseFloat(inputMax.value);
+
+                // Clamp: min cannot exceed max
+                if (minVal > maxVal) {
+                    minVal = maxVal;
+                    inputMin.value = minVal.toFixed(4);
+                }
+
+                // Sync with previous row's max
+                if (i > 0) {
+                    rows[i - 1].inputMax.value = inputMin.value;
+                    rows[i - 1].updateStats();
+                }
+
+                updateStats();
+            });
+
+            inputMax.addEventListener("change", () => {
+                let minVal = parseFloat(inputMin.value);
+                let maxVal = parseFloat(inputMax.value);
+
+                // Clamp: max cannot go below min
+                if (maxVal < minVal) {
+                    maxVal = minVal;
+                    inputMax.value = maxVal.toFixed(4);
+                }
+
+                // Sync with next row's min
+                if (i < rows.length - 1) {
+                    rows[i + 1].inputMin.value = inputMax.value;
+                    rows[i + 1].updateStats();
+                }
+
+                updateStats();
+            });
+
+            rowObj.updateStats = updateStats;
+            updateStats();
+        });
+
+        section.appendChild(table);
         bucketContainer.appendChild(section);
     });
-
 }
 
 function renderTradeTable(trades) {
