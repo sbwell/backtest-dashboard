@@ -84,6 +84,9 @@ window.onload = () => {
 
     document.addEventListener("keydown", (e) => {
         const range = chart.timeScale().getVisibleRange();
+        const symbol = document.getElementById("symbol").value;
+        const timeframe = document.getElementById("timeframe").value;
+
         if (!range) return;
 
         const timePerBar = (chartData.at(-1)?.time - chartData[0]?.time) / chartData.length;
@@ -678,4 +681,21 @@ function scrollToTrade(trade) {
 function formatDateTime(isoString) {
     if (!isoString) return "—";
     return isoString.replace("T", " ").replace("Z", "");
+}
+
+function timeframeToSeconds(tf) {
+    switch (tf) {
+        case "M1": return 60;
+        case "M5": return 300;
+        case "M15": return 900;
+        case "H1": return 3600;
+        case "H4": return 14400;
+        case "D1": return 86400;
+        default: return 60;
+    }
+}
+
+async function fetchChartDataRange(symbol, timeframe) {
+    const res = await fetch(`/candles_range?symbol=${symbol}&timeframe=${timeframe}`);
+    return await res.json();  // { min: timestamp, max: timestamp }
 }

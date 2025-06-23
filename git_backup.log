@@ -46,3 +46,8 @@ To https://github.com/sbwell/backtest-dashboard.git
  3 files changed, 44 insertions(+), 9 deletions(-)
 To https://github.com/sbwell/backtest-dashboard.git
    6352a0a..636ce77  main -> main
+[main 9dd982c] Auto backup 2025-06-22 04:00:01
+ 1 file changed, 175 insertions(+)
+ create mode 100644 backfill_eodhd.py
+To https://github.com/sbwell/backtest-dashboard.git
+   b55fe61..9dd982c  main -> main
