@@ -182,3 +182,4 @@ def get_candles(symbol: str, timeframe: str = "M1", start: Optional[int] = None,
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read candles: {str(e)}")
+
