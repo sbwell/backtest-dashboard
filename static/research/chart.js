@@ -1,3 +1,5 @@
+// chart.js - Complete fixed version
+
 let candlestickSeries;
 let trades = [];
 let chart;
@@ -11,17 +13,12 @@ let filteredTrades = [];
 // Performance optimization: debounce filter updates
 let filterUpdateTimeout = null;
 
-// Infinite scroll state
+// Manual loading approach (no automatic infinite scroll)
 let isLoadingMoreData = false;
 let hasMoreDataLeft = true;
 let hasMoreDataRight = true;
 let currentSymbol = '';
 let currentTimeframe = '';
-let keyRepeatTimeout = null;
-
-// Track phantom data state to avoid constant recreation
-let phantomDataActive = false;
-let phantomDataExtension = 0;
 
 const metricsToFilter = [
     "atr_20d", "avg_volume_20d", "rvol",
@@ -49,76 +46,73 @@ function updateLoadingUI() {
     const isAnyLoading = Object.values(loadingStates).some(state => state);
     document.body.style.cursor = isAnyLoading ? 'wait' : 'default';
     
-    // You could add a loading spinner here
     const loadingIndicator = document.getElementById('loadingIndicator');
     if (loadingIndicator) {
         loadingIndicator.style.display = isAnyLoading ? 'block' : 'none';
     }
 }
 
-window.onload = () => {
-    initializeEventListeners();
-    fetchBacktests();
-};
-
-function initializeEventListeners() {
-    document.getElementById("loadBacktestBtn").addEventListener("click", async () => {
-        await fetchBacktests();
-    });
-
-    document.getElementById("clearTradesBtn").addEventListener("click", clearAllTrades);
-    document.getElementById("showAllTradesBtn").addEventListener("click", showAllTrades);
-    document.getElementById("symbol").addEventListener("change", fetchBacktests);
-    document.getElementById("timeframe").addEventListener("change", async () => {
-        await fetchBacktests();
-    });
-
-    // NUCLEAR OPTION: Override ALL keyboard events globally
-    const handleKeyboardOverride = (e) => {
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-            console.log(`🚨 NUCLEAR OVERRIDE: ${e.key} - Forcing our handler`);
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            
-            // Call our handler directly
-            handleKeyboardNavigation(e);
-            return false;
-        }
+// Utility functions
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
     };
-    
-    // Add multiple layers of event interception
-    document.addEventListener("keydown", handleKeyboardOverride, true); // Capture phase
-    document.addEventListener("keydown", handleKeyboardNavigation, true);
-    window.addEventListener("keydown", handleKeyboardOverride, true);
-    window.addEventListener("keydown", handleKeyboardNavigation, true);
-    document.body.addEventListener("keydown", handleKeyboardOverride, true);
-    document.body.addEventListener("keydown", handleKeyboardNavigation, true);
-    
-    // Add to window load to catch any late-binding handlers
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            document.addEventListener("keydown", handleKeyboardOverride, true);
-            window.addEventListener("keydown", handleKeyboardOverride, true);
-            console.log("🔒 Late-stage keyboard override installed");
-        }, 1000);
-    });
-    
-    // Add focus to ensure keyboard events work
-    document.addEventListener("click", () => {
-        document.body.focus();
-    });
-    
-    // Make sure body can receive focus
-    document.body.setAttribute("tabindex", "0");
-    document.body.focus();
-    
-    console.log("🎹 NUCLEAR keyboard event override system initialized");
-    
-    // Window resize handler
-    window.addEventListener("resize", debounce(handleWindowResize, 250));
 }
 
+function showErrorMessage(message) {
+    console.error(message);
+}
+
+function timestampExists(ts) {
+    return chartData.some(c => Math.abs(c.time - ts) <= 60 * 15);
+}
+
+function getNearestTime(ts) {
+    if (!chartData || chartData.length === 0) return ts;
+
+    let closestIndex = 0;
+    let minDiff = Math.abs(chartData[0].time - ts);
+
+    for (let i = 1; i < chartData.length; i++) {
+        const diff = Math.abs(chartData[i].time - ts);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closestIndex = i;
+        }
+    }
+
+    return chartData[closestIndex].time;
+}
+
+function formatDateTime(isoString) {
+    if (!isoString) return "—";
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleString([], {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    } catch (error) {
+        return isoString.replace("T", " ").replace("Z", "");
+    }
+}
+
+function updateElementText(id, text) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = text;
+}
+
+// Main functions
 function clearAllTrades() {
     if (!candlestickSeries) return;
     
@@ -195,527 +189,220 @@ function showAllTrades() {
     document.querySelectorAll("#trades tbody tr").forEach(r => r.classList.remove("selected-row"));
 }
 
-function handleKeyboardNavigation(e) {
+function scrollToTrade(trade) {
     if (!chart || !chartData.length) return;
     
-    // ALWAYS prevent default for arrow keys - this is critical
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log(`🎹 Key pressed: ${e.key} - Default prevented`);
+    const entryTs = Math.floor(new Date(trade.entry_time).getTime() / 1000);
+    const exitTs = Math.floor(new Date(trade.exit_time).getTime() / 1000);
+    
+    if (!timestampExists(entryTs) || !timestampExists(exitTs)) {
+        console.warn("Trade timestamps not found in chart data");
+        return;
     }
+
+    const snappedEntry = getNearestTime(entryTs);
+    const snappedExit = getNearestTime(exitTs);
+
+    // Clear existing markers and lines
+    clearAllTrades();
+
+    // Calculate view range
+    const mid = Math.floor((snappedEntry + snappedExit) / 2);
+    const timePerBar = (chartData.at(-1).time - chartData[0].time) / chartData.length;
+    const buffer = timePerBar * 50;
+
+    // Set visible range
+    chart.timeScale().setVisibleRange({
+        from: Math.max(mid - buffer, chartData[0].time),
+        to: Math.min(mid + buffer, chartData.at(-1).time)
+    });
+
+    // Create markers
+    const isBuy = trade.side === "buy";
+    const profitColor = trade.pnl > 0 ? "#4caf50" : "#f44336";
+    
+    markers = [
+        {
+            time: snappedEntry,
+            position: isBuy ? "belowBar" : "aboveBar",
+            color: isBuy ? "#2e7d32" : "#d32f2f",
+            shape: isBuy ? "arrowUp" : "arrowDown",
+            text: `Entry: ${trade.entry_price?.toFixed(4)}`
+        },
+        {
+            time: snappedExit,
+            position: isBuy ? "aboveBar" : "belowBar",
+            color: profitColor,
+            shape: isBuy ? "arrowDown" : "arrowUp",
+            text: `Exit: ${trade.exit_price?.toFixed(4)} (${trade.pnl?.toFixed(2)})`
+        }
+    ];
+
+    // Create trade line
+    const line = chart.addLineSeries({ 
+        color: profitColor, 
+        lineWidth: 2,
+        lineStyle: trade.pnl > 0 ? 0 : 1 // solid for profit, dashed for loss
+    });
+    
+    line.setData([
+        { time: snappedEntry, value: trade.entry_price },
+        { time: snappedExit, value: trade.exit_price }
+    ]);
+    
+    tradeLines = [line];
+    candlestickSeries.setMarkers(markers);
+    
+    // Auto-scale price to show the trade clearly
+    setTimeout(() => {
+        candlestickSeries.priceScale().applyOptions({ autoScale: true });
+    }, 100);
+}
+
+// Keyboard navigation with edge stopping
+
+// Replace your ENTIRE handleKeyboardNavigation function with this complete version:
+
+function handleKeyboardNavigation(e) {
+    if (!chart || !chartData.length) return;
     
     const range = chart.timeScale().getVisibleRange();
     if (!range) return;
 
     const timePerBar = (chartData.at(-1)?.time - chartData[0]?.time) / chartData.length;
-    const step = timePerBar * 5;
-
-    switch(e.key) {
-        case "ArrowLeft":
-            console.log(`🎹 Handling ArrowLeft - hasMoreDataLeft: ${hasMoreDataLeft}, isLoadingMoreData: ${isLoadingMoreData}`);
-            handleLeftArrowNavigation(step, range, timePerBar);
-            break;
-        case "ArrowRight":
-            console.log(`🎹 Handling ArrowRight - hasMoreDataRight: ${hasMoreDataRight}, isLoadingMoreData: ${isLoadingMoreData}`);
-            handleRightArrowNavigation(step, range, timePerBar);
-            break;
-        case "Home":
-            navigateToStart(range, timePerBar);
-            break;
-        case "End":
-            navigateToEnd(range, timePerBar);
-            break;
-        case "r":
-        case "R":
-            resetChartView(timePerBar);
-            break;
-        case "Escape":
-            clearAllTrades();
-            break;
-    }
-}
-
-async function handleLeftArrowNavigation(step, range, timePerBar) {
+    const step = timePerBar * 5; // scroll 5 bars worth of time
+    
+    // Get the absolute boundaries of our data
     const firstTime = chartData[0]?.time;
-    const lastTime = chartData[chartData.length - 1]?.time;
-    const newFrom = range.from - step;
-    const newTo = range.to - step;
+    const lastTime = chartData.at(-1)?.time;
     
-    console.log(`🔍 Left navigation: firstTime=${new Date(firstTime * 1000)}, newFrom=${new Date(newFrom * 1000)}, hasMoreDataLeft=${hasMoreDataLeft}`);
-    console.log(`🔍 Current range: ${new Date(range.from * 1000)} to ${new Date(range.to * 1000)}`);
-    
-    // Check if we need more data - EXTREMELY aggressive buffer for seamless UX
-    const bufferTime = timePerBar * 1000; // 1000 bars = ~83 hours of M5 data
-    const needsMoreData = (newFrom - firstTime) <= bufferTime;
-    
-    console.log(`🔍 Buffer check: newFrom-firstTime = ${newFrom - firstTime}, bufferTime = ${bufferTime}, needsMoreData = ${needsMoreData}`);
-    console.log(`🔍 Distance in bars: ${(newFrom - firstTime) / timePerBar} bars (buffer: 1000 bars)`);
-    console.log(`🔍 isLoadingMoreData = ${isLoadingMoreData}, hasMoreDataLeft = ${hasMoreDataLeft}`);
-    
-    if (needsMoreData && hasMoreDataLeft && !isLoadingMoreData) {
-        console.log('🔄 Loading more historical data...');
-        await loadMoreHistoricalDataSync(newFrom, newTo);
-        return;
-    }
-    
-    // Calculate how far left we want to scroll beyond current data
-    const distanceBeyondData = Math.max(0, firstTime - newFrom);
-    
-    if (distanceBeyondData <= 0 && !phantomDataActive) {
-        // We're not trying to scroll beyond the data and no phantom data is active
-        console.log(`📍 Not scrolling beyond data, using normal setVisibleRange`);
-        chart.timeScale().setVisibleRange({
-            from: newFrom,
-            to: newTo
-        });
-        return;
-    }
-    
-    // If phantom data is already active, don't recreate it constantly
-    if (phantomDataActive && distanceBeyondData <= phantomDataExtension) {
-        console.log(`👻 Using existing phantom data (distance: ${distanceBeyondData}, extension: ${phantomDataExtension})`);
-        chart.timeScale().setVisibleRange({
-            from: newFrom,
-            to: newTo
-        });
-        return;
-    }
-    
-    // NEW STRATEGY: Extend the chart data temporarily to allow scrolling
-    console.log(`🚀 PHANTOM DATA STRATEGY - Creating temporary extension`);
-    
-    try {
-        // Create phantom data points to the left of real data
-        const phantomDataPoints = [];
-        const extendLeftBy = Math.max(distanceBeyondData + (timePerBar * 50), timePerBar * 200); // Extend by at least 200 bars for better scrolling
+    // Add a small tolerance for floating point comparison
+    const TOLERANCE = timePerBar * 0.1;
+
+    if (e.key === "ArrowLeft") {
+        e.preventDefault(); // Always prevent default to stop TradingView zoom
         
-        // Calculate the phantom range - going BACKWARDS from firstTime
-        const phantomEndTime = firstTime - timePerBar; // End just before real data
-        const phantomStartTime = phantomEndTime - extendLeftBy; // Start much earlier
-        
-        console.log(`👻 Creating phantom data from ${new Date(phantomStartTime * 1000)} to ${new Date(phantomEndTime * 1000)}`);
-        console.log(`👻 timePerBar: ${timePerBar}, extendLeftBy: ${extendLeftBy}`);
-        
-        // Generate phantom candles going FORWARD from start to end
-        for (let time = phantomStartTime; time <= phantomEndTime; time += timePerBar) {
-            phantomDataPoints.push({
-                time: Math.floor(time), // Ensure integer timestamps
-                open: chartData[0].open,
-                high: chartData[0].high,
-                low: chartData[0].low,
-                close: chartData[0].close
-            });
+        // Check if we're very close to the left edge (within tolerance)
+        if (range.from <= firstTime + TOLERANCE) {
+            console.log("📍 Reached left edge of data - use 'Load Earlier Data' button to load more");
+            return; // STOP HERE - don't scroll or zoom
         }
         
-        console.log(`👻 Generated ${phantomDataPoints.length} phantom data points`);
+        // Calculate new range, but don't go past the left edge
+        const newFrom = Math.max(range.from - step, firstTime);
+        const newTo = newFrom + (range.to - range.from); // Maintain same visible width
         
-        if (phantomDataPoints.length === 0) {
-            console.log(`❌ No phantom data generated - falling back to normal scroll`);
+        // Double-check we're not going past the edge
+        if (newFrom <= firstTime + TOLERANCE) {
+            // Snap exactly to the edge
+            chart.timeScale().setVisibleRange({
+                from: firstTime,
+                to: firstTime + (range.to - range.from)
+            });
+            console.log("📍 Snapped to left edge of data");
+        } else {
             chart.timeScale().setVisibleRange({
                 from: newFrom,
                 to: newTo
             });
-            return;
-        }
-        
-        // Combine phantom data with real data
-        const extendedData = [...phantomDataPoints, ...chartData];
-        
-        console.log(`📊 Extended data: ${phantomDataPoints.length} phantom + ${chartData.length} real = ${extendedData.length} total`);
-        
-        // Update the chart with extended data
-        candlestickSeries.setData(extendedData);
-        
-        // Mark phantom data as active
-        phantomDataActive = true;
-        phantomDataExtension = extendLeftBy;
-        
-        // Now try to scroll to our target position
-        console.log(`⬅️ Setting range with phantom data: ${new Date(newFrom * 1000)} to ${new Date(newTo * 1000)}`);
-        
-        chart.timeScale().setVisibleRange({
-            from: newFrom,
-            to: newTo
-        });
-        
-        // Verify the scroll worked - be much more lenient with tolerance
-        setTimeout(() => {
-            const actualRange = chart.timeScale().getVisibleRange();
-            console.log(`✅ Range after phantom data: ${new Date(actualRange.from * 1000)} to ${new Date(actualRange.to * 1000)}`);
-            
-            // MUCH more generous tolerance - allow LightweightCharts to extend the range as needed
-            const fromTolerance = timePerBar * 10; // 10 bars tolerance
-            const toTolerance = timePerBar * 60; // 60 bars tolerance (LightweightCharts extends the end a lot)
-            
-            const fromMatches = Math.abs(actualRange.from - newFrom) <= fromTolerance;
-            const toMatches = Math.abs(actualRange.to - newTo) <= toTolerance;
-            
-            console.log(`🔍 From difference: ${Math.abs(actualRange.from - newFrom)} (tolerance: ${fromTolerance})`);
-            console.log(`🔍 To difference: ${Math.abs(actualRange.to - newTo)} (tolerance: ${toTolerance})`);
-            
-            if (fromMatches) {
-                console.log(`🎯 SUCCESS! Chart is showing the correct FROM range`);
-                console.log(`🎯 Keeping phantom data for continued scrolling`);
-                
-                // Keep the phantom data in place - user can scroll around freely now
-                // Only the FROM position matters for left scrolling
-                
-            } else {
-                console.log(`❌ FROM range mismatch - removing phantom data`);
-                console.log(`❌ From match: ${fromMatches}`);
-                phantomDataActive = false;
-                phantomDataExtension = 0;
-                candlestickSeries.setData(chartData);
-            }
-        }, 50);
-        
-    } catch (error) {
-        console.error(`❌ Phantom data strategy failed:`, error);
-        phantomDataActive = false;
-        phantomDataExtension = 0;
-        // Restore original data if something goes wrong
-        try {
-            candlestickSeries.setData(chartData);
-        } catch (e) {
-            console.error(`❌ Failed to restore original data:`, e);
         }
     }
-}
 
-async function loadMoreHistoricalDataSync(targetFrom, targetTo) {
-    if (isLoadingMoreData) {
-        console.log('Already loading data, skipping...');
-        return;
+    if (e.key === "ArrowRight") {
+        e.preventDefault(); // Always prevent default to stop TradingView zoom
+        
+        // Check if we're very close to the right edge (within tolerance)
+        if (range.to >= lastTime - TOLERANCE) {
+            console.log("📍 Reached right edge of data - use 'Load More Recent Data' button to load more");
+            return; // STOP HERE - don't scroll or zoom
+        }
+        
+        // Calculate new range, but don't go past the right edge
+        const newTo = Math.min(range.to + step, lastTime);
+        const newFrom = newTo - (range.to - range.from); // Maintain same visible width
+        
+        // Double-check we're not going past the edge
+        if (newTo >= lastTime - TOLERANCE) {
+            // Snap exactly to the edge
+            chart.timeScale().setVisibleRange({
+                from: lastTime - (range.to - range.from),
+                to: lastTime
+            });
+            console.log("📍 Snapped to right edge of data");
+        } else {
+            chart.timeScale().setVisibleRange({
+                from: newFrom,
+                to: newTo
+            });
+        }
     }
+
+// Replace your Home and End key handling with this:
+
+// Replace your Home and End key handling with this simple approach:
+
+    if (e.key === "Home") {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
     
-    // Don't check hasMoreDataLeft here - let's try to load data anyway
-    // and only set hasMoreDataLeft = false if we actually get no data
-    
-    isLoadingMoreData = true;
-    
-    try {
         const firstTime = chartData[0]?.time;
-        if (!firstTime) {
-            console.log('No chart data available');
-            return;
-        }
+        if (firstTime) {
+            // SIMPLE: Always show exactly 100 bars from the start
+            const timePerBar = (chartData.at(-1).time - chartData[0].time) / chartData.length;
+            const show100Bars = timePerBar * 100;
         
-        console.log(`Loading historical data before ${new Date(firstTime * 1000)}`);
-        console.log(`Target range: ${new Date(targetFrom * 1000)} to ${new Date(targetTo * 1000)}`);
-        
-        const url = `/candles?symbol=${currentSymbol}&timeframe=${currentTimeframe}&before=${firstTime}`;
-        console.log(`API call: ${url}`);
-        
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            if (response.status === 404) {
-                console.log('No more historical data available (404) - but allowing continued scrolling');
-                hasMoreDataLeft = false;
-                // Still allow scrolling by setting the target range
-                chart.timeScale().setVisibleRange({
-                    from: targetFrom,
-                    to: targetTo
-                });
-                return;
-            }
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const newData = await response.json();
-        
-        if (!newData || newData.length === 0) {
-            console.log('No more historical data available (empty response) - but allowing continued scrolling');
-            hasMoreDataLeft = false;
-            // Still allow scrolling by setting the target range
             chart.timeScale().setVisibleRange({
-                from: targetFrom,
-                to: targetTo
+                from: firstTime,
+                to: firstTime + show100Bars
             });
-            return;
+        
+            console.log("🏠 Home: Showing first 100 bars");
         }
+    }
+
+    if (e.key === "End") {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    
+        const lastTime = chartData[chartData.length - 1]?.time;
+        if (lastTime) {
+            // SIMPLE: Always show exactly 100 bars from the end
+            const timePerBar = (chartData.at(-1).time - chartData[0].time) / chartData.length;
+            const show100Bars = timePerBar * 100;
         
-        console.log(`Received ${newData.length} historical candles`);
-        
-        // Verify the data is actually older
-        const newDataLastTime = newData[newData.length - 1]?.time;
-        if (newDataLastTime && newDataLastTime >= firstTime) {
-            console.log('API returned overlapping data - but allowing continued scrolling');
-            hasMoreDataLeft = false;
             chart.timeScale().setVisibleRange({
-                from: targetFrom,
-                to: targetTo
+                from: lastTime - show100Bars,
+                to: lastTime
             });
-            return;
+        
+            console.log("🔚 End: Showing last 100 bars");
         }
-        
-        newData.sort((a, b) => a.time - b.time);
-        
-        console.log(`Old first time: ${new Date(firstTime * 1000)}`);
-        console.log(`New first time: ${new Date(newData[0]?.time * 1000)}`);
-        
-        // Save current visible range BEFORE any chart updates
-        const currentVisibleRange = chart.timeScale().getVisibleRange();
-        console.log(`Current visible range before update: ${new Date(currentVisibleRange.from * 1000)} to ${new Date(currentVisibleRange.to * 1000)}`);
-        
-        // Update our internal chartData array
-        chartData = [...newData, ...chartData];
-        
-        // Reset phantom data state since we now have real data
-        phantomDataActive = false;
-        phantomDataExtension = 0;
-        
-        // Remove the old series and create a new one
-        chart.removeSeries(candlestickSeries);
-        
-        candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350'
-        });
-        
-        // Set all the data at once
-        candlestickSeries.setData(chartData);
-        
-        // Reapply any existing markers
-        if (markers && markers.length > 0) {
-            candlestickSeries.setMarkers(markers);
-        }
-        
-        console.log(`Setting visible range to: ${new Date(targetFrom * 1000)} to ${new Date(targetTo * 1000)}`);
-        
-        // Wait for the chart to finish rendering
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Set the target range
+    }
+
+    // Optional: Also make R key do the same thing for consistency
+    if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    
+        const lastTime = chartData.at(-1)?.time;
+        const timePerBar = (chartData.at(-1).time - chartData[0].time) / chartData.length;
+        const show100Bars = timePerBar * 100;
+
         chart.timeScale().setVisibleRange({
-            from: targetFrom,
-            to: targetTo
+            from: lastTime - show100Bars,
+            to: lastTime
         });
-        
-        console.log(`Successfully loaded ${newData.length} historical bars (total: ${chartData.length})`);
-        
-        // Only set hasMoreDataLeft = false if we got very little data
-        if (newData.length < 50) {
-            console.log('Received very little data, probably near beginning');
-            hasMoreDataLeft = false;
-        }
-        
-    } catch (error) {
-        console.error('Failed to load historical data:', error);
-        hasMoreDataLeft = false;
-        // Even on error, allow scrolling to the target position
-        try {
-            chart.timeScale().setVisibleRange({
-                from: targetFrom,
-                to: targetTo
-            });
-        } catch (e) {
-            console.error('Failed to set visible range after error:', e);
-        }
-    } finally {
-        isLoadingMoreData = false;
-    }
-}
 
-async function handleRightArrowNavigation(step, range, timePerBar) {
-    const lastTime = chartData.at(-1)?.time;
-    const newFrom = range.from + step;
-    const newTo = range.to + step;
-    
-    // Check if we need to load more data (when we're getting close to the end)
-    const bufferTime = timePerBar * 20; // 20 bars buffer
-    if (newTo >= lastTime - bufferTime && hasMoreDataRight && !isLoadingMoreData) {
-        console.log('Loading more recent data...');
-        // Load more data but don't wait for it - continue scrolling
-        loadMoreRecentData().catch(err => console.error('Failed to load more data:', err));
-    }
-    
-    // ALWAYS allow scrolling - let the chart handle empty areas
-    chart.timeScale().setVisibleRange({
-        from: newFrom,
-        to: newTo
-    });
-}
-
-// Remove the old loadMoreHistoricalData function since we're replacing it
-async function loadMoreRecentData() {
-    if (isLoadingMoreData) {
-        console.log('Already loading recent data, skipping...');
-        return;
-    }
-    
-    if (!hasMoreDataRight) {
-        console.log('No more recent data available, skipping load attempt');
-        return;
-    }
-    
-    isLoadingMoreData = true;
-    
-    try {
-        const lastTime = chartData.at(-1)?.time;
-        if (!lastTime) {
-            console.log('No chart data available');
-            return;
-        }
-        
-        // Save the current visible range before loading new data
-        const currentRange = chart.timeScale().getVisibleRange();
-        if (!currentRange) {
-            console.log('No visible range available');
-            return;
-        }
-        
-        console.log(`Loading recent data after ${new Date(lastTime * 1000)}`);
-        
-        const url = `/candles?symbol=${currentSymbol}&timeframe=${currentTimeframe}&start=${lastTime + 1}`;
-        console.log(`API call: ${url}`);
-        
-        const response = await fetch(url);
-        
-        if (!response.ok) {
-            if (response.status === 404) {
-                console.log('No more recent data available (404)');
-                hasMoreDataRight = false;
-                return;
-            }
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const newData = await response.json();
-        
-        if (!newData || newData.length === 0) {
-            console.log('No more recent data available (empty response)');
-            hasMoreDataRight = false;
-            return;
-        }
-        
-        console.log(`Received ${newData.length} recent candles`);
-        
-        // Filter out any overlapping data
-        const filteredData = newData.filter(candle => candle.time > lastTime);
-        
-        if (filteredData.length === 0) {
-            console.log('All received data was overlapping, no new data');
-            hasMoreDataRight = false;
-            return;
-        }
-        
-        // Sort to ensure correct order
-        filteredData.sort((a, b) => a.time - b.time);
-        
-        // Append new data to existing data
-        chartData = [...chartData, ...filteredData];
-        
-        // Update the chart with all data
-        candlestickSeries.setData(chartData);
-        
-        // For right scrolling, maintain the current view
+        // Auto-scale price
         setTimeout(() => {
-            chart.timeScale().setVisibleRange(currentRange);
+            candlestickSeries.priceScale().applyOptions({ autoScale: true });
         }, 50);
-        
-        console.log(`Successfully loaded ${filteredData.length} recent bars (total: ${chartData.length})`);
-        
-        if (filteredData.length < 100) {
-            hasMoreDataRight = false;
-        }
-        
-    } catch (error) {
-        console.error('Failed to load recent data:', error);
-        if (error.message.includes('404') || error.message.includes('No data')) {
-            hasMoreDataRight = false;
-        }
-    } finally {
-        isLoadingMoreData = false;
-    }
-}
-
-async function loadMoreRecentData() {
-    if (isLoadingMoreData || !hasMoreDataRight) return;
     
-    isLoadingMoreData = true;
-    
-    try {
-        const lastTime = chartData.at(-1)?.time;
-        if (!lastTime) return;
-        
-        // Calculate how much data to load
-        const timePerBar = (chartData.at(-1)?.time - chartData[0]?.time) / chartData.length;
-        const barsToLoad = 500;
-        const startTime = lastTime + timePerBar; // Start just after current last bar
-        const endTime = startTime + (timePerBar * barsToLoad);
-        
-        console.log(`Loading recent data from ${new Date(startTime * 1000)} to ${new Date(endTime * 1000)}`);
-        
-        const response = await fetch(`/candles?symbol=${currentSymbol}&timeframe=${currentTimeframe}&start=${startTime}&end=${endTime}`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const newData = await response.json();
-        
-        if (newData.length === 0) {
-            console.log('No more recent data available');
-            hasMoreDataRight = false;
-            return;
-        }
-        
-        // Append new data to existing data
-        chartData = [...chartData, ...newData];
-        
-        // Update the chart with all data
-        candlestickSeries.setData(chartData);
-        
-        console.log(`Loaded ${newData.length} recent bars`);
-        
-        // If we got less data than requested, we've probably hit the end
-        if (newData.length < barsToLoad) {
-            hasMoreDataRight = false;
-        }
-        
-    } catch (error) {
-        console.error('Failed to load recent data:', error);
-        hasMoreDataRight = false;
-    } finally {
-        isLoadingMoreData = false;
+        console.log("🔄 Reset: Showing last 100 bars with auto-scale");
     }
-}
-
-// Remove the old navigateChart function and related functions since we replaced them
-function navigateToStart(range, timePerBar) {
-    const firstTime = chartData[0]?.time;
-    const rangeSize = range.to - range.from;
-    chart.timeScale().setVisibleRange({
-        from: firstTime,
-        to: firstTime + Math.min(rangeSize, 100 * timePerBar)
-    });
-}
-
-function navigateToEnd(range, timePerBar) {
-    const lastTime = chartData.at(-1)?.time;
-    const rangeSize = range.to - range.from;
-    chart.timeScale().setVisibleRange({
-        from: lastTime - Math.min(rangeSize, 100 * timePerBar),
-        to: lastTime
-    });
-}
-
-function resetChartView(timePerBar) {
-    const barCount = 100;
-    const lastTime = chartData.at(-1)?.time;
-    const visibleLength = timePerBar * barCount;
-
-    chart.timeScale().setVisibleRange({
-        from: lastTime - visibleLength,
-        to: lastTime
-    });
-
-    candlestickSeries.priceScale().applyOptions({ autoScale: true });
 }
 
 function handleWindowResize() {
@@ -724,18 +411,29 @@ function handleWindowResize() {
     chart.resize(chartContainer.clientWidth, 500);
 }
 
-// Debounce utility function
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+function initializeEventListeners() {
+    document.getElementById("loadBacktestBtn").addEventListener("click", async () => {
+        await fetchBacktests();
+    });
+
+    document.getElementById("clearTradesBtn").addEventListener("click", clearAllTrades);
+    document.getElementById("showAllTradesBtn").addEventListener("click", showAllTrades);
+    document.getElementById("symbol").addEventListener("change", fetchBacktests);
+    document.getElementById("timeframe").addEventListener("change", async () => {
+        await fetchBacktests();
+    });
+
+    // Keyboard navigation
+    document.addEventListener("keydown", handleKeyboardNavigation);
+    
+    // Window resize handler
+    window.addEventListener("resize", debounce(handleWindowResize, 250));
 }
+
+window.onload = () => {
+    initializeEventListeners();
+    fetchBacktests();
+};
 
 async function fetchBacktests() {
     setLoadingState('backtests', true);
@@ -803,13 +501,13 @@ async function renderChart() {
             chart = null;
         }
 
-        // Re-enable some interactions but keep control of keyboard
+        // Create chart with simple configuration
         chart = LightweightCharts.createChart(chartContainer, {
             width: chartContainer.clientWidth,
             height: 500,
-            layout: { 
-                background: { color: "#ffffff" }, 
-                textColor: "#000000" 
+            layout: {
+                background: { color: "#ffffff" },
+                textColor: "#000000"
             },
             grid: {
                 vertLines: { color: "#e1e1e1" },
@@ -826,48 +524,17 @@ async function renderChart() {
                         minute: '2-digit', 
                         hour12: false 
                     });
-                },
-                rightOffset: 12,
-                barSpacing: 6,
-                minBarSpacing: 0.5,
-                fixLeftEdge: false,
-                fixRightEdge: false,
-                lockVisibleTimeRangeOnResize: true,
-                rightBarStaysOnScroll: true,
-                shiftVisibleRangeOnNewBar: true
+                }
             },
             localization: {
                 priceFormatter: price => Number(price).toFixed(isJPY ? 2 : 4)
             },
-            crosshair: { 
-                mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: {
-                    width: 1,
-                    color: '#C3BCDB44',
-                    style: LightweightCharts.LineStyle.Solid,
-                },
-                horzLine: {
-                    width: 1,
-                    color: '#C3BCDB44',
-                    style: LightweightCharts.LineStyle.Solid,
-                }
-            },
-            handleScroll: {
-                mouseWheel: true,  // Re-enable mouse wheel for testing
-                pressedMouseMove: true,
-            },
-            handleScale: {
-                axisPressedMouseMove: true,
-                mouseWheel: true,
-                pinch: true,
-            },
-            kineticScroll: {
-                touch: false,
-                mouse: false  // Keep this disabled
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal
             }
         });
 
-        console.log("📊 Chart created with scroll functionality restored");
+        console.log("📊 Chart created with simple configuration");
 
         candlestickSeries = chart.addCandlestickSeries({
             upColor: '#26a69a',
@@ -880,25 +547,7 @@ async function renderChart() {
         // Enhanced crosshair subscription
         chart.subscribeCrosshairMove(createCrosshairHandler());
 
-        // ADD: Subscribe to visible range changes for drag/wheel scrolling
-        chart.timeScale().subscribeVisibleTimeRangeChange(async (newRange) => {
-            if (!newRange || isLoadingMoreData || !chartData.length) return;
-            
-            const firstTime = chartData[0]?.time;
-            const lastTime = chartData[chartData.length - 1]?.time;
-            const calculatedTimePerBar = (lastTime - firstTime) / chartData.length;
-            const bufferTime = calculatedTimePerBar * 2000; // Match the 2000-bar buffer  
-            const needsMoreData = (newRange.from - firstTime) <= bufferTime;
-            
-            console.log(`📊 Range changed: ${new Date(newRange.from * 1000)} to ${new Date(newRange.to * 1000)}`);
-            console.log(`📊 Distance from start: ${(newRange.from - firstTime) / calculatedTimePerBar} bars, needsMoreData: ${needsMoreData}`);
-            console.log(`📊 Logic check: ${(newRange.from - firstTime)} <= ${bufferTime} = ${needsMoreData}`);
-            
-            if (needsMoreData && hasMoreDataLeft && !isLoadingMoreData) {
-                console.log('🔄 Loading more data due to drag/wheel scroll...');
-                await loadMoreHistoricalDataSync(newRange.from - (calculatedTimePerBar * 5), newRange.to);
-            }
-        });
+        // NO AUTOMATIC INFINITE SCROLL - only manual loading
 
         // Load candle data
         await loadCandleData(symbol, timeframe);
@@ -959,26 +608,30 @@ Volume: ${d.volume ? Number(d.volume).toLocaleString() : "—"}`;
 
 async function loadCandleData(symbol, timeframe) {
     try {
-        // Store current symbol and timeframe for infinite scroll
+        // Store current symbol and timeframe
         currentSymbol = symbol;
         currentTimeframe = timeframe;
         
-        // Reset infinite scroll state
+        // Reset loading states
         hasMoreDataLeft = true;
         hasMoreDataRight = true;
-        isLoadingMoreData = false; // FORCE RESET
-        phantomDataActive = false;
-        phantomDataExtension = 0;
+        isLoadingMoreData = false;
         
-        console.log(`🔧 RESET: isLoadingMoreData = ${isLoadingMoreData}`);
+        console.log(`🔧 Loading initial data for ${symbol} ${timeframe}`);
         
         const candleRes = await fetch(`/candles?symbol=${symbol}&timeframe=${timeframe}`);
         if (!candleRes.ok) throw new Error(`HTTP ${candleRes.status}`);
         
         chartData = await candleRes.json();
+        
+        if (!chartData || chartData.length === 0) {
+            console.warn("Empty chart data returned for:", symbol);
+            return;
+        }
+        
         candlestickSeries.setData(chartData);
         
-        console.log(`Loaded ${chartData.length} initial candles for ${symbol} ${timeframe}`);
+        console.log(`✅ Loaded ${chartData.length} initial candles for ${symbol} ${timeframe}`);
     } catch (err) {
         console.error("Failed to load candles:", err);
         showErrorMessage("Failed to load price data.");
@@ -1009,35 +662,102 @@ async function loadTradeData(symbol) {
     }
 }
 
-function showErrorMessage(message) {
-    // You could implement a toast notification system here
-    console.error(message);
-    // For now, just alert - you might want to replace with a nicer UI
-    // alert(message);
-}
-
-function timestampExists(ts) {
-    return chartData.some(c => Math.abs(c.time - ts) <= 60 * 15);
-}
-
-function getNearestTime(ts) {
-    if (!chartData || chartData.length === 0) return ts;
-
-    let closestIndex = 0;
-    let minDiff = Math.abs(chartData[0].time - ts);
-
-    for (let i = 1; i < chartData.length; i++) {
-        const diff = Math.abs(chartData[i].time - ts);
-        if (diff < minDiff) {
-            minDiff = diff;
-            closestIndex = i;
+// Manual data loading functions
+async function loadEarlierData() {
+    if (!chartData.length || isLoadingMoreData || !hasMoreDataLeft) {
+        console.log('Cannot load earlier data - no data, already loading, or no more data available');
+        return;
+    }
+    
+    isLoadingMoreData = true;
+    const loadEarlierBtn = document.getElementById('loadEarlierBtn');
+    if (loadEarlierBtn) {
+        loadEarlierBtn.disabled = true;
+        loadEarlierBtn.textContent = 'Loading...';
+    }
+    
+    try {
+        const earliestTime = chartData[0]?.time;
+        console.log('🔄 Loading earlier data before:', new Date(earliestTime * 1000).toISOString());
+        
+        const res = await fetch(`/candles?symbol=${currentSymbol}&timeframe=${currentTimeframe}&before=${earliestTime}&limit=3000`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const moreData = await res.json();
+        
+        if (moreData && moreData.length > 0) {
+            console.log(`✅ Loaded ${moreData.length} earlier candles`);
+            chartData = [...moreData, ...chartData];
+            candlestickSeries.setData(chartData);
+            
+            // Reapply markers if they exist
+            if (markers && markers.length > 0) {
+                candlestickSeries.setMarkers(markers);
+            }
+        } else {
+            hasMoreDataLeft = false;
+            console.log('No more earlier data available');
+        }
+    } catch (err) {
+        console.error("Error loading earlier data:", err);
+        hasMoreDataLeft = false;
+    } finally {
+        isLoadingMoreData = false;
+        if (loadEarlierBtn) {
+            loadEarlierBtn.disabled = false;
+            loadEarlierBtn.textContent = '← Load Earlier Data';
         }
     }
-
-    return chartData[closestIndex].time;
 }
 
-// Debounced filter update for better performance
+async function loadMoreRecentData() {
+    if (!chartData.length || isLoadingMoreData || !hasMoreDataRight) {
+        console.log('Cannot load more recent data - no data, already loading, or no more data available');
+        return;
+    }
+    
+    isLoadingMoreData = true;
+    const loadMoreRecentBtn = document.getElementById('loadMoreRecentBtn');
+    if (loadMoreRecentBtn) {
+        loadMoreRecentBtn.disabled = true;
+        loadMoreRecentBtn.textContent = 'Loading...';
+    }
+    
+    try {
+        const latestTime = chartData[chartData.length - 1]?.time;
+        console.log('🔄 Loading more recent data after:', new Date(latestTime * 1000).toISOString());
+        
+        const res = await fetch(`/candles?symbol=${currentSymbol}&timeframe=${currentTimeframe}&after=${latestTime}&limit=3000`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const moreData = await res.json();
+        
+        if (moreData && moreData.length > 0) {
+            console.log(`✅ Loaded ${moreData.length} more recent candles`);
+            chartData = [...chartData, ...moreData];
+            candlestickSeries.setData(chartData);
+            
+            // Reapply markers if they exist
+            if (markers && markers.length > 0) {
+                candlestickSeries.setMarkers(markers);
+            }
+        } else {
+            hasMoreDataRight = false;
+            console.log('No more recent data available');
+        }
+    } catch (err) {
+        console.error("Error loading more recent data:", err);
+        hasMoreDataRight = false;
+    } finally {
+        isLoadingMoreData = false;
+        if (loadMoreRecentBtn) {
+            loadMoreRecentBtn.disabled = false;
+            loadMoreRecentBtn.textContent = 'Load More Recent Data →';
+        }
+    }
+}
+
+// Filter and analysis functions
 function updateFilteredTrades() {
     if (filterUpdateTimeout) {
         clearTimeout(filterUpdateTimeout);
@@ -1094,11 +814,6 @@ function renderSummary(filtered, original) {
     updateElementText("sumWinRateOriginal", o.winRate.toFixed(1) + "%");
     updateElementText("sumStartOriginal", o.start);
     updateElementText("sumEndOriginal", o.end);
-}
-
-function updateElementText(id, text) {
-    const element = document.getElementById(id);
-    if (element) element.textContent = text;
 }
 
 function renderFilters(trades) {
@@ -1410,120 +1125,7 @@ function createTradeRow(trade) {
     return row;
 }
 
-function scrollToTrade(trade) {
-    if (!chart || !chartData.length) return;
-    
-    const entryTs = Math.floor(new Date(trade.entry_time).getTime() / 1000);
-    const exitTs = Math.floor(new Date(trade.exit_time).getTime() / 1000);
-    
-    if (!timestampExists(entryTs) || !timestampExists(exitTs)) {
-        console.warn("Trade timestamps not found in chart data");
-        return;
-    }
-
-    const snappedEntry = getNearestTime(entryTs);
-    const snappedExit = getNearestTime(exitTs);
-
-    // Clear existing markers and lines
-    clearAllTrades();
-
-    // Calculate view range
-    const mid = Math.floor((snappedEntry + snappedExit) / 2);
-    const timePerBar = (chartData.at(-1).time - chartData[0].time) / chartData.length;
-    const buffer = timePerBar * 50;
-
-    // Set visible range
-    chart.timeScale().setVisibleRange({
-        from: Math.max(mid - buffer, chartData[0].time),
-        to: Math.min(mid + buffer, chartData.at(-1).time)
-    });
-
-    // Create markers
-    const isBuy = trade.side === "buy";
-    const profitColor = trade.pnl > 0 ? "#4caf50" : "#f44336";
-    
-    markers = [
-        {
-            time: snappedEntry,
-            position: isBuy ? "belowBar" : "aboveBar",
-            color: isBuy ? "#2e7d32" : "#d32f2f",
-            shape: isBuy ? "arrowUp" : "arrowDown",
-            text: `Entry: ${trade.entry_price?.toFixed(4)}`
-        },
-        {
-            time: snappedExit,
-            position: isBuy ? "aboveBar" : "belowBar",
-            color: profitColor,
-            shape: isBuy ? "arrowDown" : "arrowUp",
-            text: `Exit: ${trade.exit_price?.toFixed(4)} (${trade.pnl?.toFixed(2)})`
-        }
-    ];
-
-    // Create trade line
-    const line = chart.addLineSeries({ 
-        color: profitColor, 
-        lineWidth: 2,
-        lineStyle: trade.pnl > 0 ? 0 : 1 // solid for profit, dashed for loss
-    });
-    
-    line.setData([
-        { time: snappedEntry, value: trade.entry_price },
-        { time: snappedExit, value: trade.exit_price }
-    ]);
-    
-    tradeLines = [line];
-    candlestickSeries.setMarkers(markers);
-    
-    // Auto-scale price to show the trade clearly
-    setTimeout(() => {
-        candlestickSeries.priceScale().applyOptions({ autoScale: true });
-    }, 100);
-}
-
-function formatDateTime(isoString) {
-    if (!isoString) return "—";
-    try {
-        const date = new Date(isoString);
-        return date.toLocaleString([], {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    } catch (error) {
-        return isoString.replace("T", " ").replace("Z", "");
-    }
-}
-
-function timeframeToSeconds(tf) {
-    const timeframes = {
-        "M1": 60,
-        "M5": 300,
-        "M15": 900,
-        "M30": 1800,
-        "H1": 3600,
-        "H4": 14400,
-        "D1": 86400,
-        "W1": 604800
-    };
-    return timeframes[tf] || 60;
-}
-
-async function fetchChartDataRange(symbol, timeframe) {
-    try {
-        const res = await fetch(`/candles_range?symbol=${symbol}&timeframe=${timeframe}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
-    } catch (error) {
-        console.error("Failed to fetch chart data range:", error);
-        return { min: null, max: null };
-    }
-}
-
-// Additional utility functions for enhanced functionality
-
+// Export and utility functions
 function exportFilteredTrades() {
     if (!filteredTrades.length) {
         alert("No trades to export");
@@ -1582,9 +1184,6 @@ function resetAllFilters() {
 function handleError(error, context = "") {
     console.error(`Error in ${context}:`, error);
     
-    // You could implement more sophisticated error handling here
-    // Such as displaying user-friendly messages, retry logic, etc.
-    
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
         showErrorMessage("Network error. Please check your connection and try again.");
     } else if (error.name === 'SyntaxError') {
@@ -1594,11 +1193,15 @@ function handleError(error, context = "") {
     }
 }
 
-// Add these functions to window for external access if needed
+// Export functions to window for external access
 window.tradingChart = {
     exportFilteredTrades,
     resetAllFilters,
     clearAllTrades,
     showAllTrades,
-    scrollToTrade
+    scrollToTrade,
+    loadEarlierData,
+    loadMoreRecentData
 };
+
+console.log("📊 Chart with manual load buttons ready!");

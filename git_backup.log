@@ -59,3 +59,8 @@ To https://github.com/sbwell/backtest-dashboard.git
  2 files changed, 4 insertions(+), 1 deletion(-)
 To https://github.com/sbwell/backtest-dashboard.git
    ba8bc11..6e815bb  main -> main
+[main 123ff36] Auto backup 2025-06-25 04:00:01
+ 3 files changed, 1609 insertions(+), 701 deletions(-)
+ rewrite static/research/chart.js (71%)
+To https://github.com/sbwell/backtest-dashboard.git
+   6e815bb..123ff36  main -> main

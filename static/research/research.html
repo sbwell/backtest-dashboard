@@ -7,26 +7,23 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.0/nouislider.min.css" rel="stylesheet">
   <style>
     body {
       font-family: sans-serif;
       margin: 20px;
     }
-
     #layout {
       display: flex;
       gap: 30px;
       align-items: flex-start;
     }
-
     #chart {
       height: 500px;
       width: 100%;
       background-color: white;
       position: relative;
     }
-
     #hoverBox {
       position: absolute;
       top: 10px;
@@ -39,48 +36,75 @@
       pointer-events: none;
       white-space: pre-line;
     }
-
     #chart-controls {
       margin: 10px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
     }
-
+    #load-data-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    #load-data-controls button {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      background-color: white;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    #load-data-controls button:hover {
+      background-color: #e9e9e9;
+    }
+    #load-data-controls button:disabled {
+      background-color: #f5f5f5;
+      color: #999;
+      cursor: not-allowed;
+    }
+    #loadingIndicator {
+      display: none;
+      color: #666;
+      font-style: italic;
+      font-size: 12px;
+    }
     #tradesTableContainer {
       max-height: 200px;
       overflow-y: auto;
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-
     #trades {
       width: 100%;
       font-size: 12px;
     }
-
     #trades th, #trades td {
       padding: 4px 6px;
       text-align: center;
       border: 1px solid #ccc;
     }
-
     #trades thead {
       background-color: #f2f2f2;
     }
-
     #trades tbody tr:nth-child(even) {
       background-color: #fafafa;
     }
-
     #trades tbody tr.selected-row {
       background-color: #d0ebff !important;
     }
-
     #summaryPanel {
       border: 1px solid #ccc;
       padding: 10px;
       margin-bottom: 20px;
       background: white;
     }
-
     .tab-nav {
       list-style: none;
       padding: 0;
@@ -88,7 +112,6 @@
       border-bottom: 1px solid #ccc;
       margin-bottom: 10px;
     }
-
     .tab-nav li {
       padding: 8px 16px;
       cursor: pointer;
@@ -97,37 +120,30 @@
       border-bottom: none;
       margin-right: 5px;
     }
-
     .tab-nav li.active {
       background: white;
       font-weight: bold;
     }
-
     .tab-content {
       border: 1px solid #ccc;
       padding: 10px;
       background: white;
     }
-
     .tab-pane {
       display: none;
     }
-
     .tab-pane.active {
       display: block;
     }
-
     #summaryTable {
       border-collapse: collapse;
     }
-
     #summaryTable th,
     #summaryTable td {
       border: 1px solid #ccc;
       padding: 6px;
       text-align: center;
     }
-
     #summaryTable thead {
       background-color: #f5f5f5;
     }
@@ -148,7 +164,6 @@
       <option value="AUDUSD">AUDUSD</option>
       <option value="NZDUSD">NZDUSD</option>
     </select>
-
     <label for="timeframe" style="margin-left: 20px;">Timeframe:</label>
     <select id="timeframe">
       <option value="M1">1 Minute</option>
@@ -159,7 +174,7 @@
       <option value="D1">1 Day</option>
     </select>
   </div>
-
+  
   <!-- Layout -->
   <div id="layout" style="display: flex; width: 100%;">
     <!-- LEFT: Chart, Controls, Trades -->
@@ -167,14 +182,25 @@
       <div id="chart">
         <div id="hoverBox"></div>
       </div>
-
-      <!-- Buttons and backtest selector -->
+      
+      <!-- Main Chart Controls -->
       <div id="chart-controls">
         <button id="showAllTradesBtn">Show All Trades</button>
         <button id="clearTradesBtn">Clear Trades</button>
         <label for="backtest-select" style="margin-left: 10px;">Backtest:</label>
         <select id="backtest-select" style="margin-right: 10px;"></select>
         <button id="loadBacktestBtn">Load Backtest</button>
+        <span id="loadingIndicator">Loading...</span>
+      </div>
+
+      <!-- Load Data Controls -->
+      <div id="load-data-controls">
+        <label style="font-weight: bold;">Load More Data:</label>
+        <button id="loadEarlierBtn">← Load Earlier Data</button>
+        <button id="loadMoreRecentBtn">Load More Recent Data →</button>
+        <span style="font-size: 11px; color: #666;">
+          Use arrow keys to navigate within loaded data
+        </span>
       </div>
 
       <!-- Trades Table -->
@@ -195,7 +221,7 @@
         </table>
       </div>
     </div>
-
+    
     <!-- RIGHT: Summary + Filters + Buckets -->
     <div style="width: 34%;">
       <!-- Summary -->
@@ -226,12 +252,10 @@
           <li class="active" data-tab="tab-filters">Filters</li>
           <li data-tab="tab-buckets">Buckets</li>
         </ul>
-
         <div class="tab-content">
           <div id="tab-filters" class="tab-pane active">
             <div id="filtersContainer"></div>
           </div>
-
           <div id="tab-buckets" class="tab-pane">
             <div id="tab-buckets"></div>
           </div>
@@ -239,12 +263,11 @@
       </div>
     </div>
   </div>
-
+  
   <!-- Scripts -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css">
   <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
   <script src="/static/research/chart.js"></script>
-
   <script>
     // Tab switching logic
     document.querySelectorAll('.tab-nav li').forEach(tab => {
@@ -254,6 +277,27 @@
         tab.classList.add('active');
         document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
       });
+    });
+
+    // Add event listeners for load data buttons once the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Wait a bit for chart.js to load and initialize
+      setTimeout(function() {
+        const loadEarlierBtn = document.getElementById('loadEarlierBtn');
+        const loadMoreRecentBtn = document.getElementById('loadMoreRecentBtn');
+        
+        if (loadEarlierBtn && window.tradingChart && window.tradingChart.loadEarlierData) {
+          loadEarlierBtn.addEventListener('click', window.tradingChart.loadEarlierData);
+        } else {
+          console.warn('loadEarlierData function not found');
+        }
+        
+        if (loadMoreRecentBtn && window.tradingChart && window.tradingChart.loadMoreRecentData) {
+          loadMoreRecentBtn.addEventListener('click', window.tradingChart.loadMoreRecentData);
+        } else {
+          console.warn('loadMoreRecentData function not found');
+        }
+      }, 500);
     });
   </script>
 </body>
