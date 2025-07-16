@@ -267,7 +267,7 @@
   <!-- Scripts -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css">
   <script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
-  <script type="module" src="/static/research/test-env/js/chart.js"></script>
+  <script src="/static/research/chart.js"></script>
   <script>
     // Tab switching logic
     document.querySelectorAll('.tab-nav li').forEach(tab => {
