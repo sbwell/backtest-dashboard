@@ -3,3 +3,4 @@
 *.db
 !backtests.db       # <- this un-ignores backtests.db
 __pycache__/
+*.backup_before_timezone_fix

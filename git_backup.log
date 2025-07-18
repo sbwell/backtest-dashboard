@@ -151,3 +151,11 @@ To https://github.com/sbwell/backtest-dashboard.git
  create mode 100644 static/research/test-env/test.html
 To https://github.com/sbwell/backtest-dashboard.git
    e116b52..c56f199  main -> main
+[main 4c01ba9] Auto backup 2025-07-17 04:00:02
+ 5 files changed, 1418 insertions(+), 3 deletions(-)
+ create mode 100755 csv_to_db_importer.py
+ create mode 100755 csv_to_db_importer_old.py
+ create mode 100755 incremental_enrichment.py
+ create mode 100755 update_price_data.py
+To https://github.com/sbwell/backtest-dashboard.git
+   63d12c4..4c01ba9  main -> main
