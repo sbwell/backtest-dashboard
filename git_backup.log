@@ -159,3 +159,9 @@ To https://github.com/sbwell/backtest-dashboard.git
  create mode 100755 update_price_data.py
 To https://github.com/sbwell/backtest-dashboard.git
    63d12c4..4c01ba9  main -> main
+[main ce353cd] Auto backup 2025-07-18 04:00:01
+ 2 files changed, 109 insertions(+)
+ create mode 100755 debug_eurusd_data.sh
+ create mode 100755 fix_eurusd_data.sh
+To https://github.com/sbwell/backtest-dashboard.git
+   4a5d4cd..ce353cd  main -> main

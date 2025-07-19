@@ -35,31 +35,30 @@ send_discord_notification() {
     fi
     
     if [ "$success" = "true" ]; then
-        # Success message (green theme)
-        local discord_message="✅ **FOREX DATA UPDATE SUCCESS** ✅
-        
+        # Success message - simple, clean format
+        local discord_message="✅ FOREX UPDATE SUCCESS ✅
+
 📊 Daily forex update completed successfully
 ⏱️ Duration: ${duration} minutes
 🕐 Time: $(date '+%Y-%m-%d %H:%M:%S EST')
 🖥️ Server: $(hostname)
 
-All 28 currency pairs updated with latest EODHD data through $(date -d 'yesterday' '+%Y-%m-%d')"
+All 28 currency pairs updated with latest EODHD data."
         
     else
-        # Failure message (red theme with bold dots)
-        local discord_message="🔴 **FOREX DATA UPDATE FAILED** 🔴
+        # Failure message - simple, clean format
+        local discord_message="❌ FOREX UPDATE FAILED ❌
 
-❌ Daily forex update encountered errors
+⚠️ Daily forex update encountered errors
 ⏱️ Duration: ${duration} minutes  
 🕐 Time: $(date '+%Y-%m-%d %H:%M:%S EST')
 🖥️ Server: $(hostname)
 📋 Error: $message
 
-🔍 Check logs: \`$LOG_FILE\`
-⚠️ Trading data may be stale - manual intervention required!"
+Check logs for details."
     fi
     
-    # Send to Discord
+    # Send to Discord with proper JSON escaping
     curl -H "Content-Type: application/json" \
          -d "{\"content\":\"$discord_message\"}" \
          "$DISCORD_WEBHOOK_URL" \
