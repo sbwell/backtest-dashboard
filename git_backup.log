@@ -165,3 +165,10 @@ To https://github.com/sbwell/backtest-dashboard.git
  create mode 100755 fix_eurusd_data.sh
 To https://github.com/sbwell/backtest-dashboard.git
    4a5d4cd..ce353cd  main -> main
+[main b80a285] Auto backup 2025-07-19 04:00:01
+ 7 files changed, 684 insertions(+), 25 deletions(-)
+ create mode 100755 fix_m1_duplicates.sh
+ create mode 100644 logs/daily_eodhd_update_20250718.log
+ create mode 100755 update_database_and_enrich.sh
+To https://github.com/sbwell/backtest-dashboard.git
+   ce353cd..b80a285  main -> main
