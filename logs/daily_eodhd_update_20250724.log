@@ -1,0 +1,8 @@
+2025-07-24 05:00:01 - === Starting EODHD Daily Update at 4 AM EST ===
+2025-07-24 05:00:01 - Starting EODHD data update...
+  File "/opt/chart_dashboard/eodhd_daily_updater.py", line 172
+    """Append new data to CSV file, avoiding duplicates"""
+    ^
+IndentationError: expected an indented block after function definition on line 171
+2025-07-24 05:00:01 - ❌ EODHD update failed with exit code 1 after 0 minutes
+{"message": "The request body contains invalid JSON.", "code": 50109}
