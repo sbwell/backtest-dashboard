@@ -169,45 +169,45 @@ class EODHDUpdater:
         return csv_lines
     
     def append_to_csv(self, symbol, csv_lines):
-    """Append new data to CSV file, avoiding duplicates"""
-    if not csv_lines:
-        logger.info(f"No new data to append for {symbol}")
-        return True
+        """Append new data to CSV file, avoiding duplicates"""
+        if not csv_lines:
+            logger.info(f"No new data to append for {symbol}")
+            return True
 
-    csv_path = os.path.join(self.data_dir, f"{symbol}_M1.csv")
+        csv_path = os.path.join(self.data_dir, f"{symbol}_M1.csv")
     
-    try:
-        # Get existing timestamps
-        existing_timestamps = set()
-        if os.path.exists(csv_path):
-            with open(csv_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if line.strip():
-                        timestamp = line.split(';')[0]
-                        existing_timestamps.add(timestamp)
+        try:
+            # Get existing timestamps
+            existing_timestamps = set()
+            if os.path.exists(csv_path):
+                with open(csv_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.strip():
+                            timestamp = line.split(';')[0]
+                            existing_timestamps.add(timestamp)
         
-        # Filter out duplicate timestamps
-        unique_lines = []
-        for line in csv_lines:
-            timestamp = line.split(';')[0]
-            if timestamp not in existing_timestamps:
-                unique_lines.append(line)
+            # Filter out duplicate timestamps
+            unique_lines = []
+            for line in csv_lines:
+                timestamp = line.split(';')[0]
+                if timestamp not in existing_timestamps:
+                    unique_lines.append(line)
         
-        if not unique_lines:
-            logger.info(f"No new unique data to append for {symbol} (all {len(csv_lines)} lines were duplicates)")
+            if not unique_lines:
+                logger.info(f"No new unique data to append for {symbol} (all {len(csv_lines)} lines were duplicates)")
+                return True
+        
+            # Append only unique lines
+            with open(csv_path, 'a', encoding='utf-8') as f:
+                for line in unique_lines:
+                    f.write(line + '\n')
+        
+            logger.info(f"Successfully appended {len(unique_lines)} unique lines to {symbol}_M1.csv (filtered {len(csv_lines) - len(unique_lines)} duplicates)")
             return True
         
-        # Append only unique lines
-        with open(csv_path, 'a', encoding='utf-8') as f:
-            for line in unique_lines:
-                f.write(line + '\n')
-        
-        logger.info(f"Successfully appended {len(unique_lines)} unique lines to {symbol}_M1.csv (filtered {len(csv_lines) - len(unique_lines)} duplicates)")
-        return True
-        
-    except Exception as e:
-        logger.error(f"Error appending to {symbol} CSV: {e}")
-        return False
+        except Exception as e:
+            logger.error(f"Error appending to {symbol} CSV: {e}")
+            return False
     
     def update_single_pair(self, symbol):
         """Update a single currency pair"""
