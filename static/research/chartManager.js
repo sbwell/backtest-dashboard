@@ -43,10 +43,11 @@ class ChartManager {
                 borderColor: "#D1D4DC",
                 timeFormatter: time => {
                     const d = new Date(time * 1000);
-                    return d.toLocaleTimeString([], { 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        hour12: false 
+                    return d.toLocaleString('en-US', {
+                        timeZone: 'America/New_York',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
                     });
                 }
             },
@@ -56,7 +57,21 @@ class ChartManager {
         };
 
         // Merge options
-        const chartOptions = { ...defaultOptions, ...options };
+        const chartOptions = { 
+            ...defaultOptions, 
+            ...options,
+            timeScale: {
+                borderVisible: true,
+                timeVisible: true,
+                borderColor: "#D1D4DC",
+                // Force UTC offset for EST
+                utcOffset: -5 * 60, // EST is UTC-5 (in minutes)
+                timeFormatter: time => {
+                    const d = new Date((time - 5 * 3600) * 1000); // Subtract 5 hours
+                    return d.toISOString().substr(11, 5); // Just HH:MM
+                }
+            }
+        };
 
         // Create chart
         this.chart = LightweightCharts.createChart(chartContainer, chartOptions);
@@ -95,26 +110,36 @@ class ChartManager {
         return hover;
     }
 
-    createCrosshairHandler() {
-        return (param) => {
-            if (!this.hoverBox) return;
+createCrosshairHandler() {
+    return (param) => {
+        if (!this.hoverBox) return;
 
-            if (!param.point || !param.time || !param.seriesData.has(this.candlestickSeries)) {
-                this.hoverBox.textContent = "";
-                return;
-            }
+        if (!param.point || !param.time || !param.seriesData.has(this.candlestickSeries)) {
+            this.hoverBox.textContent = "";
+            return;
+        }
 
-            const d = param.seriesData.get(this.candlestickSeries);
-            const date = new Date(param.time * 1000).toLocaleString();
-            
-            this.hoverBox.innerText = `Time:   ${date}
+        const d = param.seriesData.get(this.candlestickSeries);
+        
+        // Convert to EST
+        const date = new Date(param.time * 1000);
+        const estDate = new Date(date.toLocaleString("en-US", {timeZone: "America/New_York"}));
+        
+        const dateString = estDate.getFullYear() + '-' + 
+                          String(estDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(estDate.getDate()).padStart(2, '0') + ' ' +
+                          String(estDate.getHours()).padStart(2, '0') + ':' + 
+                          String(estDate.getMinutes()).padStart(2, '0') + ':' + 
+                          String(estDate.getSeconds()).padStart(2, '0') + ' EST';
+        
+        this.hoverBox.innerText = `Time:   ${dateString}
 Open:   ${d.open}
 High:   ${d.high}
 Low:    ${d.low}
 Close:  ${d.close}
 Volume: ${d.volume ? Number(d.volume).toLocaleString() : "—"}`;
-        };
-    }
+    };
+}
 
     setData(data) {
         if (!this.candlestickSeries) {

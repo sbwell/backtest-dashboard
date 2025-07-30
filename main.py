@@ -130,6 +130,12 @@ def get_candles(symbol: str, timeframe: str = "M1", start: Optional[int] = None,
                     timestamp_str, open_, high, low, close = parts[:5]
                     try:
                         dt = datetime.strptime(timestamp_str, "%Y%m%d %H%M%S")
+
+                        # Data is stored in EST (UTC-5)
+                        from datetime import timezone, timedelta
+                        est_timezone = timezone(timedelta(hours=-5))
+                        dt = dt.replace(tzinfo=est_timezone)
+
                         ts = int(dt.timestamp())
                         if ts >= before:
                             continue

@@ -246,30 +246,25 @@ class EODHDUpdater:
         return self.append_to_csv(symbol, csv_lines)
     
     def run_incremental_resampling(self):
-        """Run the incremental resampling script (much faster for daily updates)"""
-        try:
-            logger.info("Running incremental resampling script...")
+    """Run the full resampling script (more reliable for daily updates)"""
+    try:
+        logger.info("Running full resampling script...")
+        
+        result = subprocess.run([
+            sys.executable, 
+            "/opt/chart_dashboard/data/resample_csvs.py"
+        ], capture_output=True, text=True, cwd="/opt/chart_dashboard/data")
+        
+        if result.returncode == 0:
+            logger.info("Full resampling completed successfully")
+            return True
+        else:
+            logger.error(f"Full resampling failed: {result.stderr}")
+            return False
             
-            # Use the new incremental resampler
-            result = subprocess.run([
-                sys.executable, 
-                "/opt/chart_dashboard/incremental_resample.py"
-            ], capture_output=True, text=True, cwd="/opt/chart_dashboard")
-            
-            if result.returncode == 0:
-                logger.info("Incremental resampling completed successfully")
-                return True
-            else:
-                logger.error(f"Incremental resampling failed: {result.stderr}")
-                # Fallback to full resampling if incremental fails
-                logger.info("Falling back to full resampling...")
-                return self.run_full_resampling()
-                
-        except Exception as e:
-            logger.error(f"Error running incremental resampling: {e}")
-            # Fallback to full resampling
-            logger.info("Falling back to full resampling...")
-            return self.run_full_resampling()
+    except Exception as e:
+        logger.error(f"Error running full resampling: {e}")
+        return False
     
     def run_full_resampling(self):
         """Run the full resampling script (fallback method)"""
