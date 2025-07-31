@@ -1,0 +1,8 @@
+2025-07-30 05:00:01 - === Starting EODHD Daily Update at 4 AM EST ===
+2025-07-30 05:00:01 - Starting EODHD data update...
+  File "/opt/chart_dashboard/eodhd_daily_updater.py", line 249
+    """Run the full resampling script (more reliable for daily updates)"""
+    ^
+IndentationError: expected an indented block after function definition on line 248
+2025-07-30 05:00:02 - ❌ EODHD update failed with exit code 1 after 0 minutes
+{"message": "The request body contains invalid JSON.", "code": 50109}

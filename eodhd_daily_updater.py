@@ -246,25 +246,24 @@ class EODHDUpdater:
         return self.append_to_csv(symbol, csv_lines)
     
     def run_incremental_resampling(self):
-    """Run the full resampling script (more reliable for daily updates)"""
-    try:
-        logger.info("Running full resampling script...")
+        """Run the full resampling script (more reliable for daily updates)"""
+        try:
+            logger.info("Running full resampling script...")
+            result = subprocess.run([
+                sys.executable, 
+                "/opt/chart_dashboard/data/resample_csvs.py"
+            ], capture_output=True, text=True, cwd="/opt/chart_dashboard/data")
         
-        result = subprocess.run([
-            sys.executable, 
-            "/opt/chart_dashboard/data/resample_csvs.py"
-        ], capture_output=True, text=True, cwd="/opt/chart_dashboard/data")
-        
-        if result.returncode == 0:
-            logger.info("Full resampling completed successfully")
-            return True
-        else:
-            logger.error(f"Full resampling failed: {result.stderr}")
-            return False
+            if result.returncode == 0:
+                logger.info("Full resampling completed successfully")
+                return True
+            else:
+                logger.error(f"Full resampling failed: {result.stderr}")
+                return False
             
-    except Exception as e:
-        logger.error(f"Error running full resampling: {e}")
-        return False
+        except Exception as e:
+            logger.error(f"Error running full resampling: {e}")
+            return False
     
     def run_full_resampling(self):
         """Run the full resampling script (fallback method)"""
