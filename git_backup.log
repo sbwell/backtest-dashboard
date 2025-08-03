@@ -233,3 +233,9 @@ To https://github.com/sbwell/backtest-dashboard.git
  create mode 100644 logs/daily_eodhd_update_20250731.log
 To https://github.com/sbwell/backtest-dashboard.git
    f0b91ea..a2ed7cd  main -> main
+[main 8793813] Auto backup 2025-08-02 04:00:01
+ 4 files changed, 943 insertions(+)
+ create mode 100755 integrate_benzinga.py
+ create mode 100644 logs/daily_eodhd_update_20250801.log
+To https://github.com/sbwell/backtest-dashboard.git
+   a2ed7cd..8793813  main -> main
