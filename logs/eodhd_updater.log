@@ -2964,3 +2964,271 @@
 2025-08-07 05:44:51,580 - INFO - Running incremental enrichment...
 2025-08-07 05:45:44,076 - INFO - Enrichment completed successfully
 2025-08-07 05:45:44,077 - INFO - ✅ Complete update finished successfully in 45.7 minutes
+2025-08-08 05:00:01,536 - INFO - 🔄 Step 1: Updating M1 CSV files...
+2025-08-08 05:00:01,536 - INFO - === Starting EODHD Daily Update ===
+2025-08-08 05:00:01,536 - INFO - 
+=== Updating AUDCAD ===
+2025-08-08 05:00:01,540 - INFO - AUDCAD: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:00:01,540 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.540372
+2025-08-08 05:00:01,540 - INFO - Fetching AUDCAD data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.540372
+2025-08-08 05:00:06,764 - INFO - Fetched 1738 records for AUDCAD
+2025-08-08 05:00:06,792 - INFO - Converted to 1738 CSV lines after filtering
+2025-08-08 05:00:11,836 - INFO - Successfully appended 1438 unique lines to AUDCAD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:12,429 - INFO - 
+=== Updating AUDCHF ===
+2025-08-08 05:00:12,431 - INFO - AUDCHF: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:00:12,431 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.431676
+2025-08-08 05:00:12,431 - INFO - Fetching AUDCHF data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.431676
+2025-08-08 05:00:13,186 - INFO - Fetched 1738 records for AUDCHF
+2025-08-08 05:00:13,220 - INFO - Converted to 1738 CSV lines after filtering
+2025-08-08 05:00:16,982 - INFO - Successfully appended 1438 unique lines to AUDCHF_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:17,407 - INFO - 
+=== Updating AUDJPY ===
+2025-08-08 05:00:17,408 - INFO - AUDJPY: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:00:17,408 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.408879
+2025-08-08 05:00:17,409 - INFO - Fetching AUDJPY data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.408879
+2025-08-08 05:00:18,106 - INFO - Fetched 1739 records for AUDJPY
+2025-08-08 05:00:18,132 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:00:22,291 - INFO - Successfully appended 1440 unique lines to AUDJPY_M1.csv (filtered 299 duplicates)
+2025-08-08 05:00:22,735 - INFO - 
+=== Updating AUDNZD ===
+2025-08-08 05:00:22,736 - INFO - AUDNZD: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:00:22,736 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.736733
+2025-08-08 05:00:22,736 - INFO - Fetching AUDNZD data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.736733
+2025-08-08 05:00:23,384 - INFO - Fetched 1739 records for AUDNZD
+2025-08-08 05:00:23,412 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:00:28,066 - INFO - Successfully appended 1439 unique lines to AUDNZD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:28,590 - INFO - 
+=== Updating AUDUSD ===
+2025-08-08 05:00:28,591 - INFO - AUDUSD: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:00:28,592 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.592194
+2025-08-08 05:00:28,592 - INFO - Fetching AUDUSD data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.592194
+2025-08-08 05:00:29,325 - INFO - Fetched 1739 records for AUDUSD
+2025-08-08 05:00:29,348 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:00:33,708 - INFO - Successfully appended 1439 unique lines to AUDUSD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:34,153 - INFO - 
+=== Updating CADCHF ===
+2025-08-08 05:00:34,154 - INFO - CADCHF: Last CSV timestamp = 2025-08-06 01:55:00
+2025-08-08 05:00:34,154 - INFO - Need to fetch data from 2025-08-06 01:56:00 to 2025-08-07 23:59:59.154415
+2025-08-08 05:00:34,154 - INFO - Fetching CADCHF data from 2025-08-06 01:56:00 to 2025-08-07 23:59:59.154415
+2025-08-08 05:00:34,876 - INFO - Fetched 1739 records for CADCHF
+2025-08-08 05:00:34,899 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:00:38,425 - INFO - Successfully appended 1439 unique lines to CADCHF_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:38,892 - INFO - 
+=== Updating CADJPY ===
+2025-08-08 05:00:38,893 - INFO - CADJPY: Last CSV timestamp = 2025-08-06 01:54:00
+2025-08-08 05:00:38,893 - INFO - Need to fetch data from 2025-08-06 01:55:00 to 2025-08-07 23:59:59.893930
+2025-08-08 05:00:38,894 - INFO - Fetching CADJPY data from 2025-08-06 01:55:00 to 2025-08-07 23:59:59.893930
+2025-08-08 05:00:39,627 - INFO - Fetched 1737 records for CADJPY
+2025-08-08 05:00:39,650 - INFO - Converted to 1737 CSV lines after filtering
+2025-08-08 05:00:43,977 - INFO - Successfully appended 1437 unique lines to CADJPY_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:44,421 - INFO - 
+=== Updating CHFJPY ===
+2025-08-08 05:00:44,423 - INFO - CHFJPY: Last CSV timestamp = 2025-08-06 01:52:00
+2025-08-08 05:00:44,423 - INFO - Need to fetch data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.423432
+2025-08-08 05:00:44,423 - INFO - Fetching CHFJPY data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.423432
+2025-08-08 05:00:45,122 - INFO - Fetched 1739 records for CHFJPY
+2025-08-08 05:00:45,148 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:00:48,798 - INFO - Successfully appended 1439 unique lines to CHFJPY_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:49,251 - INFO - 
+=== Updating EURAUD ===
+2025-08-08 05:00:49,251 - INFO - EURAUD: Last CSV timestamp = 2025-08-06 01:51:00
+2025-08-08 05:00:49,251 - INFO - Need to fetch data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.251911
+2025-08-08 05:00:49,252 - INFO - Fetching EURAUD data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.251911
+2025-08-08 05:00:50,001 - INFO - Fetched 1740 records for EURAUD
+2025-08-08 05:00:50,024 - INFO - Converted to 1740 CSV lines after filtering
+2025-08-08 05:00:53,772 - INFO - Successfully appended 1440 unique lines to EURAUD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:00:54,199 - INFO - 
+=== Updating EURCAD ===
+2025-08-08 05:00:54,276 - INFO - EURCAD: Last CSV timestamp = 2025-08-06 01:51:00
+2025-08-08 05:00:54,277 - INFO - Need to fetch data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.277003
+2025-08-08 05:00:54,277 - INFO - Fetching EURCAD data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.277003
+2025-08-08 05:00:54,954 - INFO - Fetched 1737 records for EURCAD
+2025-08-08 05:00:54,981 - INFO - Converted to 1737 CSV lines after filtering
+2025-08-08 05:00:58,731 - INFO - Successfully appended 1438 unique lines to EURCAD_M1.csv (filtered 299 duplicates)
+2025-08-08 05:00:59,222 - INFO - 
+=== Updating EURCHF ===
+2025-08-08 05:00:59,225 - INFO - EURCHF: Last CSV timestamp = 2025-08-06 01:51:00
+2025-08-08 05:00:59,225 - INFO - Need to fetch data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.225741
+2025-08-08 05:00:59,225 - INFO - Fetching EURCHF data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.225741
+2025-08-08 05:00:59,828 - INFO - Fetched 1740 records for EURCHF
+2025-08-08 05:00:59,853 - INFO - Converted to 1740 CSV lines after filtering
+2025-08-08 05:01:04,246 - INFO - Successfully appended 1440 unique lines to EURCHF_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:04,690 - INFO - 
+=== Updating EURGBP ===
+2025-08-08 05:01:04,699 - INFO - EURGBP: Last CSV timestamp = 2025-08-06 01:51:00
+2025-08-08 05:01:04,700 - INFO - Need to fetch data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.700187
+2025-08-08 05:01:04,700 - INFO - Fetching EURGBP data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.700187
+2025-08-08 05:01:05,287 - INFO - Fetched 1736 records for EURGBP
+2025-08-08 05:01:05,309 - INFO - Converted to 1736 CSV lines after filtering
+2025-08-08 05:01:09,378 - INFO - Successfully appended 1436 unique lines to EURGBP_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:09,918 - INFO - 
+=== Updating EURJPY ===
+2025-08-08 05:01:09,919 - INFO - EURJPY: Last CSV timestamp = 2025-08-06 01:51:00
+2025-08-08 05:01:09,920 - INFO - Need to fetch data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.920245
+2025-08-08 05:01:09,920 - INFO - Fetching EURJPY data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.920245
+2025-08-08 05:01:10,632 - INFO - Fetched 1741 records for EURJPY
+2025-08-08 05:01:10,660 - INFO - Converted to 1741 CSV lines after filtering
+2025-08-08 05:01:14,097 - INFO - Successfully appended 1441 unique lines to EURJPY_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:14,606 - INFO - 
+=== Updating EURNZD ===
+2025-08-08 05:01:14,607 - INFO - EURNZD: Last CSV timestamp = 2025-08-06 01:51:00
+2025-08-08 05:01:14,608 - INFO - Need to fetch data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.608273
+2025-08-08 05:01:14,608 - INFO - Fetching EURNZD data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.608273
+2025-08-08 05:01:15,319 - INFO - Fetched 1739 records for EURNZD
+2025-08-08 05:01:15,347 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:01:18,785 - INFO - Successfully appended 1439 unique lines to EURNZD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:19,212 - INFO - 
+=== Updating EURUSD ===
+2025-08-08 05:01:19,214 - INFO - EURUSD: Last CSV timestamp = 2025-08-06 01:51:00
+2025-08-08 05:01:19,214 - INFO - Need to fetch data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.214451
+2025-08-08 05:01:19,214 - INFO - Fetching EURUSD data from 2025-08-06 01:52:00 to 2025-08-07 23:59:59.214451
+2025-08-08 05:01:19,834 - INFO - Fetched 1739 records for EURUSD
+2025-08-08 05:01:19,858 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:01:23,518 - INFO - Successfully appended 1439 unique lines to EURUSD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:23,999 - INFO - 
+=== Updating GBPAUD ===
+2025-08-08 05:01:24,000 - INFO - GBPAUD: Last CSV timestamp = 2025-08-06 01:52:00
+2025-08-08 05:01:24,000 - INFO - Need to fetch data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.000544
+2025-08-08 05:01:24,000 - INFO - Fetching GBPAUD data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.000544
+2025-08-08 05:01:24,599 - INFO - Fetched 1735 records for GBPAUD
+2025-08-08 05:01:24,622 - INFO - Converted to 1735 CSV lines after filtering
+2025-08-08 05:01:29,021 - INFO - Successfully appended 1436 unique lines to GBPAUD_M1.csv (filtered 299 duplicates)
+2025-08-08 05:01:29,503 - INFO - 
+=== Updating GBPCAD ===
+2025-08-08 05:01:29,504 - INFO - GBPCAD: Last CSV timestamp = 2025-08-06 01:52:00
+2025-08-08 05:01:29,504 - INFO - Need to fetch data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.504553
+2025-08-08 05:01:29,504 - INFO - Fetching GBPCAD data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.504553
+2025-08-08 05:01:30,133 - INFO - Fetched 1737 records for GBPCAD
+2025-08-08 05:01:30,155 - INFO - Converted to 1737 CSV lines after filtering
+2025-08-08 05:01:34,017 - INFO - Successfully appended 1439 unique lines to GBPCAD_M1.csv (filtered 298 duplicates)
+2025-08-08 05:01:34,495 - INFO - 
+=== Updating GBPCHF ===
+2025-08-08 05:01:34,496 - INFO - GBPCHF: Last CSV timestamp = 2025-08-06 01:52:00
+2025-08-08 05:01:34,496 - INFO - Need to fetch data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.496463
+2025-08-08 05:01:34,496 - INFO - Fetching GBPCHF data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.496463
+2025-08-08 05:01:35,100 - INFO - Fetched 1739 records for GBPCHF
+2025-08-08 05:01:35,120 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:01:38,782 - INFO - Successfully appended 1439 unique lines to GBPCHF_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:39,270 - INFO - 
+=== Updating GBPJPY ===
+2025-08-08 05:01:39,271 - INFO - GBPJPY: Last CSV timestamp = 2025-08-06 01:52:00
+2025-08-08 05:01:39,271 - INFO - Need to fetch data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.271426
+2025-08-08 05:01:39,271 - INFO - Fetching GBPJPY data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.271426
+2025-08-08 05:01:39,932 - INFO - Fetched 1739 records for GBPJPY
+2025-08-08 05:01:39,956 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:01:43,904 - INFO - Successfully appended 1439 unique lines to GBPJPY_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:44,463 - INFO - 
+=== Updating GBPNZD ===
+2025-08-08 05:01:44,464 - INFO - GBPNZD: Last CSV timestamp = 2025-08-06 01:52:00
+2025-08-08 05:01:44,464 - INFO - Need to fetch data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.464398
+2025-08-08 05:01:44,464 - INFO - Fetching GBPNZD data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.464398
+2025-08-08 05:01:45,115 - INFO - Fetched 1738 records for GBPNZD
+2025-08-08 05:01:45,138 - INFO - Converted to 1738 CSV lines after filtering
+2025-08-08 05:01:49,032 - INFO - Successfully appended 1439 unique lines to GBPNZD_M1.csv (filtered 299 duplicates)
+2025-08-08 05:01:49,549 - INFO - 
+=== Updating GBPUSD ===
+2025-08-08 05:01:49,551 - INFO - GBPUSD: Last CSV timestamp = 2025-08-06 01:52:00
+2025-08-08 05:01:49,552 - INFO - Need to fetch data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.552359
+2025-08-08 05:01:49,552 - INFO - Fetching GBPUSD data from 2025-08-06 01:53:00 to 2025-08-07 23:59:59.552359
+2025-08-08 05:01:50,166 - INFO - Fetched 1702 records for GBPUSD
+2025-08-08 05:01:50,190 - INFO - Converted to 1702 CSV lines after filtering
+2025-08-08 05:01:53,767 - INFO - Successfully appended 1402 unique lines to GBPUSD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:01:54,265 - INFO - 
+=== Updating NZDCAD ===
+2025-08-08 05:01:54,266 - INFO - NZDCAD: Last CSV timestamp = 2025-08-06 02:06:00
+2025-08-08 05:01:54,266 - INFO - Need to fetch data from 2025-08-06 02:07:00 to 2025-08-07 23:59:59.266468
+2025-08-08 05:01:54,266 - INFO - Fetching NZDCAD data from 2025-08-06 02:07:00 to 2025-08-07 23:59:59.266468
+2025-08-08 05:01:54,891 - INFO - Fetched 1739 records for NZDCAD
+2025-08-08 05:01:54,923 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:01:58,786 - INFO - Successfully appended 1440 unique lines to NZDCAD_M1.csv (filtered 299 duplicates)
+2025-08-08 05:01:59,127 - INFO - 
+=== Updating NZDCHF ===
+2025-08-08 05:01:59,129 - INFO - NZDCHF: Last CSV timestamp = 2025-08-06 02:06:00
+2025-08-08 05:01:59,129 - INFO - Need to fetch data from 2025-08-06 02:07:00 to 2025-08-07 23:59:59.129651
+2025-08-08 05:01:59,129 - INFO - Fetching NZDCHF data from 2025-08-06 02:07:00 to 2025-08-07 23:59:59.129651
+2025-08-08 05:01:59,785 - INFO - Fetched 1739 records for NZDCHF
+2025-08-08 05:01:59,808 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:02:03,384 - INFO - Successfully appended 1439 unique lines to NZDCHF_M1.csv (filtered 300 duplicates)
+2025-08-08 05:02:03,747 - INFO - 
+=== Updating NZDJPY ===
+2025-08-08 05:02:03,748 - INFO - NZDJPY: Last CSV timestamp = 2025-08-06 02:07:00
+2025-08-08 05:02:03,748 - INFO - Need to fetch data from 2025-08-06 02:08:00 to 2025-08-07 23:59:59.748841
+2025-08-08 05:02:03,749 - INFO - Fetching NZDJPY data from 2025-08-06 02:08:00 to 2025-08-07 23:59:59.748841
+2025-08-08 05:02:04,562 - INFO - Fetched 1739 records for NZDJPY
+2025-08-08 05:02:04,587 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:02:08,281 - INFO - Successfully appended 1439 unique lines to NZDJPY_M1.csv (filtered 300 duplicates)
+2025-08-08 05:02:08,723 - INFO - 
+=== Updating NZDUSD ===
+2025-08-08 05:02:08,725 - INFO - NZDUSD: Last CSV timestamp = 2025-08-06 02:18:00
+2025-08-08 05:02:08,725 - INFO - Need to fetch data from 2025-08-06 02:19:00 to 2025-08-07 23:59:59.725338
+2025-08-08 05:02:08,725 - INFO - Fetching NZDUSD data from 2025-08-06 02:19:00 to 2025-08-07 23:59:59.725338
+2025-08-08 05:02:09,445 - INFO - Fetched 1703 records for NZDUSD
+2025-08-08 05:02:09,470 - INFO - Converted to 1703 CSV lines after filtering
+2025-08-08 05:02:12,856 - INFO - Successfully appended 1407 unique lines to NZDUSD_M1.csv (filtered 296 duplicates)
+2025-08-08 05:02:13,274 - INFO - 
+=== Updating USDCAD ===
+2025-08-08 05:02:13,276 - INFO - USDCAD: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:02:13,276 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.276707
+2025-08-08 05:02:13,276 - INFO - Fetching USDCAD data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.276707
+2025-08-08 05:02:14,018 - INFO - Fetched 1740 records for USDCAD
+2025-08-08 05:02:14,043 - INFO - Converted to 1740 CSV lines after filtering
+2025-08-08 05:02:17,316 - INFO - Successfully appended 1440 unique lines to USDCAD_M1.csv (filtered 300 duplicates)
+2025-08-08 05:02:17,850 - INFO - 
+=== Updating USDCHF ===
+2025-08-08 05:02:17,858 - INFO - USDCHF: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:02:17,858 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.858846
+2025-08-08 05:02:17,862 - INFO - Fetching USDCHF data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.858846
+2025-08-08 05:02:18,476 - INFO - Fetched 1737 records for USDCHF
+2025-08-08 05:02:18,501 - INFO - Converted to 1737 CSV lines after filtering
+2025-08-08 05:02:22,090 - INFO - Successfully appended 1437 unique lines to USDCHF_M1.csv (filtered 300 duplicates)
+2025-08-08 05:02:22,546 - INFO - 
+=== Updating USDJPY ===
+2025-08-08 05:02:22,547 - INFO - USDJPY: Last CSV timestamp = 2025-08-06 01:53:00
+2025-08-08 05:02:22,548 - INFO - Need to fetch data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.548127
+2025-08-08 05:02:22,548 - INFO - Fetching USDJPY data from 2025-08-06 01:54:00 to 2025-08-07 23:59:59.548127
+2025-08-08 05:02:23,307 - INFO - Fetched 1739 records for USDJPY
+2025-08-08 05:02:23,361 - INFO - Converted to 1739 CSV lines after filtering
+2025-08-08 05:02:27,011 - INFO - Successfully appended 1439 unique lines to USDJPY_M1.csv (filtered 300 duplicates)
+2025-08-08 05:02:27,442 - INFO - 
+=== UPDATE SUMMARY ===
+2025-08-08 05:02:27,443 - INFO - Successfully updated: 28/28 currency pairs
+2025-08-08 05:02:27,443 - INFO - API calls made: 28
+2025-08-08 05:02:27,443 - INFO - ✅ AUDCAD
+2025-08-08 05:02:27,443 - INFO - ✅ AUDCHF
+2025-08-08 05:02:27,443 - INFO - ✅ AUDJPY
+2025-08-08 05:02:27,444 - INFO - ✅ AUDNZD
+2025-08-08 05:02:27,444 - INFO - ✅ AUDUSD
+2025-08-08 05:02:27,444 - INFO - ✅ CADCHF
+2025-08-08 05:02:27,444 - INFO - ✅ CADJPY
+2025-08-08 05:02:27,444 - INFO - ✅ CHFJPY
+2025-08-08 05:02:27,444 - INFO - ✅ EURAUD
+2025-08-08 05:02:27,444 - INFO - ✅ EURCAD
+2025-08-08 05:02:27,444 - INFO - ✅ EURCHF
+2025-08-08 05:02:27,444 - INFO - ✅ EURGBP
+2025-08-08 05:02:27,445 - INFO - ✅ EURJPY
+2025-08-08 05:02:27,445 - INFO - ✅ EURNZD
+2025-08-08 05:02:27,445 - INFO - ✅ EURUSD
+2025-08-08 05:02:27,445 - INFO - ✅ GBPAUD
+2025-08-08 05:02:27,445 - INFO - ✅ GBPCAD
+2025-08-08 05:02:27,445 - INFO - ✅ GBPCHF
+2025-08-08 05:02:27,445 - INFO - ✅ GBPJPY
+2025-08-08 05:02:27,445 - INFO - ✅ GBPNZD
+2025-08-08 05:02:27,445 - INFO - ✅ GBPUSD
+2025-08-08 05:02:27,445 - INFO - ✅ NZDCAD
+2025-08-08 05:02:27,445 - INFO - ✅ NZDCHF
+2025-08-08 05:02:27,446 - INFO - ✅ NZDJPY
+2025-08-08 05:02:27,446 - INFO - ✅ NZDUSD
+2025-08-08 05:02:27,446 - INFO - ✅ USDCAD
+2025-08-08 05:02:27,446 - INFO - ✅ USDCHF
+2025-08-08 05:02:27,446 - INFO - ✅ USDJPY
+2025-08-08 05:02:27,446 - INFO - 🔄 Step 2: Incremental resampling to other timeframes...
+2025-08-08 05:02:27,446 - INFO - Running full resampling script...
+2025-08-08 05:17:52,421 - INFO - Full resampling completed successfully
+2025-08-08 05:17:52,423 - INFO - 🔄 Step 3: Importing to database...
+2025-08-08 05:17:52,423 - INFO - Running CSV to database import...
+2025-08-08 05:45:42,426 - INFO - Database import completed successfully
+2025-08-08 05:45:42,427 - INFO - 🔄 Step 4: Running enrichment...
+2025-08-08 05:45:42,427 - INFO - Running incremental enrichment...
+2025-08-08 05:46:32,851 - INFO - Enrichment completed successfully
+2025-08-08 05:46:32,851 - INFO - ✅ Complete update finished successfully in 46.5 minutes
